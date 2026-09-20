@@ -109,128 +109,254 @@ $comments =$stmt_comment->fetchAll();
 
 </div>
 
-<!-- Upload Modal -->
-<div id="uploadModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl p-6 space-y-4">
-        <h2 class="text-lg font-bold text-slate-800">แนบไฟล์อัพโหลดเอกสาร</h2>
-        <form id="uploadForm" enctype="multipart/form-data" class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">ประเภทเอกสาร</label>
-                <select name="doc_type" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
-                    <option value="pa2">ข้อตกลงในการประเมิน (PA2)</option>
-                    <option value="report">รายงานผลการประเมิน PA</option>
-                    <option value="info">ข้อมูลประกอบ (Info)</option>
-                    <option value="other">อื่นๆ</option>
-                </select>
-            </div>
+<!-- Modal อัพโหลดเอกสาร (เลือกได้ 3 ไฟล์) -->
+<div id="uploadModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl p-6 space-y-5 my-8">
+        <div class="flex justify-between items-center border-b pb-3">
+            <h2 class="text-lg font-bold text-slate-800">แนบอัพโหลดเอกสารประเมิน PA (3 รายการ)</h2>
+            <button onclick="closeUploadModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+        </div>
 
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">รูปแบบการแนบ</label>
-                <div class="flex gap-4">
-                    <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="radio" name="upload_kind" value="file" checked onclick="toggleUploadType('file')"> ไฟล์เอกสาร</label>
-                    <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="radio" name="upload_kind" value="link" onclick="toggleUploadType('link')"> ลิงก์ URL</label>
+        <form id="uploadForm" enctype="multipart/form-data" class="space-y-6">
+            
+            <!-- 1. เอกสาร PA2 -->
+            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                <div class="flex justify-between items-center">
+                    <label class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                        <span class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">1</span> ข้อตกลงในการประเมิน (PA2)
+                    </label>
+                    <div class="flex gap-3 text-xs">
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_pa2" value="file" checked onclick="toggleType('pa2', 'file')"> ไฟล์</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_pa2" value="link" onclick="toggleType('pa2', 'link')"> ลิงก์</label>
+                    </div>
+                </div>
+                <div id="input_pa2_file">
+                    <input type="file" name="file_pa2" accept=".pdf,.png,.jpg,.jpeg" class="w-full border border-slate-300 rounded-lg text-xs p-2 bg-white">
+                </div>
+                <div id="input_pa2_link" class="hidden">
+                    <input type="url" name="link_pa2" placeholder="https://..." class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white">
                 </div>
             </div>
 
-            <div id="fileInputGroup">
-                <label class="block text-sm font-medium text-slate-700 mb-1">เลือกไฟล์ (PDF, PNG, JPG ไม่เกิน 15MB)</label>
-                <input type="file" id="doc_file" name="doc_file" accept=".pdf,.png,.jpg,.jpeg" class="w-full border border-slate-300 rounded-lg text-sm p-2">
+            <!-- 2. ข้อมูลประกอบ (Info) -->
+            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                <div class="flex justify-between items-center">
+                    <label class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                        <span class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">2</span> ข้อมูลประกอบ (Info)
+                    </label>
+                    <div class="flex gap-3 text-xs">
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_info" value="file" checked onclick="toggleType('info', 'file')"> ไฟล์</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_info" value="link" onclick="toggleType('info', 'link')"> ลิงก์</label>
+                    </div>
+                </div>
+                <div id="input_info_file">
+                    <input type="file" name="file_info" accept=".pdf,.png,.jpg,.jpeg" class="w-full border border-slate-300 rounded-lg text-xs p-2 bg-white">
+                </div>
+                <div id="input_info_link" class="hidden">
+                    <input type="url" name="link_info" placeholder="https://..." class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white">
+                </div>
             </div>
 
-            <div id="linkInputGroup" class="hidden">
-                <label class="block text-sm font-medium text-slate-700 mb-1">ระบุ URL ลิงก์เอกสาร</label>
-                <input type="url" id="doc_link" name="doc_link" placeholder="https://..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
+            <!-- 3. รายงานผลการประเมิน PA -->
+            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                <div class="flex justify-between items-center">
+                    <label class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                        <span class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">3</span> รายงานผลการประเมิน PA (รายงาน PA)
+                    </label>
+                    <div class="flex gap-3 text-xs">
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_report" value="file" checked onclick="toggleType('report', 'file')"> ไฟล์</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_report" value="link" onclick="toggleType('report', 'link')"> ลิงก์</label>
+                    </div>
+                </div>
+                <div id="input_report_file">
+                    <input type="file" name="file_report" accept=".pdf,.png,.jpg,.jpeg" class="w-full border border-slate-300 rounded-lg text-xs p-2 bg-white">
+                </div>
+                <div id="input_report_link" class="hidden">
+                    <input type="url" name="link_report" placeholder="https://..." class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white">
+                </div>
             </div>
 
-            <div class="flex justify-end gap-2 pt-4">
+            <p class="text-xs text-slate-400">* หมายเหตุ: รองรับไฟล์ PDF, PNG, JPG ขนาดไม่เกิน 15MB ต่อไฟล์ (สามารถเลือกแนบเฉพาะบางรายการได้)</p>
+
+            <div class="flex justify-end gap-2 pt-2 border-t">
                 <button type="button" onclick="closeUploadModal()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">ยกเลิก</button>
-                <button type="button" onclick="submitUpload()" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">บันทึกไฟล์เอกสาร</button>
+                <button type="button" onclick="submitUpload()" class="px-5 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">บันทึกไฟล์เอกสารทั้งหมด</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Preview Modal -->
-<div id="previewModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white w-full max-w-4xl h-[85vh] rounded-2xl shadow-xl p-4 flex flex-col">
-        <div class="flex justify-between items-center mb-3">
-            <h3 class="font-bold text-slate-800">ตัวอย่างเอกสาร</h3>
-            <button onclick="closePreviewModal()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
-        </div>
-        <div id="previewContainer" class="flex-1 border rounded-xl bg-slate-100 overflow-hidden"></div>
-    </div>
-</div>
-
 <script>
-function openUploadModal() { document.getElementById('uploadModal').classList.remove('hidden'); document.getElementById('uploadModal').classList.add('flex'); }
-function closeUploadModal() { document.getElementById('uploadModal').classList.add('hidden'); document.getElementById('uploadModal').classList.remove('flex'); }
-function closePreviewModal() { document.getElementById('previewModal').classList.add('hidden'); document.getElementById('previewModal').classList.remove('flex'); }
+<!-- แท็ก Script สำหรับเปิด-ปิด Modal และควบคุมฟอร์ม -->
 
-function toggleUploadType(type) {
-    if(type === 'file') {
-        document.getElementById('fileInputGroup').classList.remove('hidden');
-        document.getElementById('linkInputGroup').classList.add('hidden');
+function openUploadModal() { 
+    const modal = document.getElementById('uploadModal');
+    if (modal) {
+        modal.classList.remove('hidden'); 
+        modal.classList.add('flex'); 
+    }
+}
+
+function closeUploadModal() { 
+    const modal = document.getElementById('uploadModal');
+    if (modal) {
+        modal.classList.add('hidden'); 
+        modal.classList.remove('flex'); 
+    }
+}
+
+function closePreviewModal() { 
+    const modal = document.getElementById('previewModal');
+    if (modal) {
+        modal.classList.add('hidden'); 
+        modal.classList.remove('flex'); 
+    }
+}
+
+function toggleType(docKey, type) {
+    const fileGroup = document.getElementById(`input_${docKey}_file`);
+    const linkGroup = document.getElementById(`input_${docKey}_link`);
+    if (type === 'file') {
+        if (fileGroup) fileGroup.classList.remove('hidden');
+        if (linkGroup) linkGroup.classList.add('hidden');
     } else {
-        document.getElementById('fileInputGroup').classList.add('hidden');
-        document.getElementById('linkInputGroup').classList.remove('hidden');
+        if (fileGroup) fileGroup.classList.add('hidden');
+        if (linkGroup) linkGroup.classList.remove('hidden');
     }
 }
 
 function submitUpload() {
-    const kind = document.querySelector('input[name="upload_kind"]:checked').value;
     const formData = new FormData(document.getElementById('uploadForm'));
+    const docTypes = ['pa2', 'info', 'report'];
+    let hasData = false;
+    let isValid = true;
 
-    if (kind === 'file') {
-        const fileInput = document.getElementById('doc_file');
-        const file = fileInput.files[0];
-        if (!file) {
-            Swal.fire({ icon: 'warning', title: 'กรุณาเลือกไฟล์เอกสาร' });
-            return;
+    docTypes.forEach(type => {
+        const kindInput = document.querySelector(`input[name="kind_${type}"]:checked`);
+        if (!kindInput) return;
+        const kind = kindInput.value;
+
+        if (kind === 'file') {
+            const fileInput = document.querySelector(`input[name="file_${type}"]`);
+            if (fileInput && fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                hasData = true;
+                if (file.size > 15 * 1024 * 1024) {
+                    Swal.fire({ icon: 'error', title: 'ไฟล์มีขนาดใหญ่เกินไป', text: `ไฟล์ในรายการ ${type.toUpperCase()} มีขนาดเกิน 15 MB` });
+                    isValid = false;
+                }
+            }
+        } else {
+            const linkInput = document.querySelector(`input[name="link_${type}"]`);
+            if (linkInput && linkInput.value.trim() !== '') {
+                hasData = true;
+            }
         }
-        if (file.size > 15 * 1024 * 1024) {
-            Swal.fire({ icon: 'error', title: 'ขนาดไฟล์เกินกำหนด', text: 'ต้องไม่เกิน 15 MB' });
-            return;
-        }
-        const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
-        if (!allowedTypes.includes(file.type)) {
-            Swal.fire({ icon: 'error', title: 'ประเภทไฟล์ไม่ถูกต้อง', text: 'รองรับเฉพาะ PDF, PNG, JPG' });
-            return;
-        }
-    } else {
-        if (!document.getElementById('doc_link').value) {
-            Swal.fire({ icon: 'warning', title: 'กรุณากรอก URL ลิงก์' });
-            return;
-        }
+    });
+
+    if (!isValid) return;
+
+    if (!hasData) {
+        Swal.fire({ icon: 'warning', title: 'กรุณาแนบเอกสารอย่างน้อย 1 รายการ' });
+        return;
     }
 
-    Swal.fire({ title: 'กำลังบันทึกเอกสาร...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    Swal.fire({ title: 'กำลังอัพโหลดเอกสาร...', text: 'โปรดรอสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
     fetch('/api/upload_doc', { method: 'POST', body: formData })
     .then(res => res.json())
     .then(data => {
-        if(data.success) {
+        if (data.success) {
             closeUploadModal();
-            Swal.fire({ icon: 'success', title: 'อัพโหลดสำเร็จ!', text: 'บันทึกไฟล์เอกสารเรียบร้อยแล้ว' }).then(() => location.reload());
+            Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ!', text: 'อัพโหลดเอกสารเรียบร้อยแล้ว' }).then(() => location.reload());
         } else {
             Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: data.message });
         }
-    });
+    })
+    .catch(() => Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาดในการเชื่อมต่อ' }));
 }
 
 function previewFile(url, type) {
     const container = document.getElementById('previewContainer');
-    if (type === 'link') {
-        window.open(url, '_blank');
-        return;
+    if (!container) return;
+    
+    if (type === 'link') { 
+        window.open(url, '_blank'); 
+        return; 
     }
+    
     const ext = url.split('.').pop().toLowerCase();
     if (ext === 'pdf') {
         container.innerHTML = `<iframe src="${url}" class="w-full h-full border-0"></iframe>`;
     } else {
         container.innerHTML = `<div class="w-full h-full flex items-center justify-center p-4"><img src="${url}" class="max-h-full max-w-full object-contain rounded-lg"></div>`;
     }
-    document.getElementById('previewModal').classList.remove('hidden');
-    document.getElementById('previewModal').classList.add('flex');
+    
+    const previewModal = document.getElementById('previewModal');
+    if (previewModal) {
+        previewModal.classList.remove('hidden');
+        previewModal.classList.add('flex');
+    }
+}
+
+// ฟังก์ชั่นสลับ ระหว่าง ไฟล์ กับ ลิงก์
+function toggleType(docKey, type) {
+    if (type === 'file') {
+        document.getElementById(`input_${docKey}_file`).classList.remove('hidden');
+        document.getElementById(`input_${docKey}_link`).classList.add('hidden');
+    } else {
+        document.getElementById(`input_${docKey}_file`).classList.add('hidden');
+        document.getElementById(`input_${docKey}_link`).classList.remove('hidden');
+    }
+}
+
+// ตรวจสอบข้อมูลก่อนส่ง API
+function submitUpload() {
+    const formData = new FormData(document.getElementById('uploadForm'));
+    const docTypes = ['pa2', 'info', 'report'];
+    let hasData = false;
+    let isValid = true;
+
+    docTypes.forEach(type => {
+        const kind = document.querySelector(`input[name="kind_${type}"]:checked`).value;
+        if (kind === 'file') {
+            const fileInput = document.querySelector(`input[name="file_${type}"]`);
+            if (fileInput && fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                hasData = true;
+                if (file.size > 15 * 1024 * 1024) {
+                    Swal.fire({ icon: 'error', title: 'ไฟล์มีขนาดใหญ่เกินไป', text: `ไฟล์ในรายการ ${type.toUpperCase()} มีขนาดเกิน 15 MB` });
+                    isValid = false;
+                }
+            }
+        } else {
+            const linkInput = document.querySelector(`input[name="link_${type}"]`).value.trim();
+            if (linkInput !== '') {
+                hasData = true;
+            }
+        }
+    });
+
+    if (!isValid) return;
+
+    if (!hasData) {
+        Swal.fire({ icon: 'warning', title: 'กรุณาแนบเอกสารอย่างน้อย 1 รายการ' });
+        return;
+    }
+
+    Swal.fire({ title: 'กำลังอัพโหลดเอกสาร...', text: 'โปรดรอสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    fetch('/api/upload_doc', { method: 'POST', body: formData })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            closeUploadModal();
+            Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ!', text: 'อัพโหลดเอกสารเรียบร้อยแล้ว' }).then(() => location.reload());
+        } else {
+            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: data.message });
+        }
+    })
+    .catch(() => Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาดในการเชื่อมต่อ' }));
 }
 </script>
 </body>
