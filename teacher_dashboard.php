@@ -23,91 +23,68 @@ $stmt_comment =$pdo->prepare("
 ");
 $stmt_comment->execute([$user_id]);
 $comments =$stmt_comment->fetchAll();
+
+$page_title = "ส่วนของคุณครู - ระบบประเมิน PA";
+$header_title = "ระบบอัพโหลดเอกสาร PA";
+$extra_nav_button = '
+    <button onclick="openUploadModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
+        <i class="fa-solid fa-cloud-arrow-up"></i> แนบไฟล์อัพโหลดเอกสาร
+    </button>';
+
+require_once __DIR__ . '/includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ส่วนของคุณครู - ระบบประเมิน PA</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style> body { font-family: 'Sarabun', sans-serif; } </style>
-</head>
-<body class="bg-slate-50 min-h-screen p-6">
-<div class="max-w-6xl mx-auto space-y-6">
 
-    <!-- Navbar -->
-    <div class="flex justify-between items-center bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-        <div>
-            <h1 class="text-xl font-bold text-slate-800">ระบบอัพโหลดเอกสาร PA</h1>
-            <p class="text-slate-500 text-sm">ยินดีต้อนรับ: <?= htmlspecialchars($_SESSION['fullname']) ?></p>
-        </div>
-        <div class="flex gap-2">
-            <button onclick="openUploadModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
-                <i class="fa-solid fa-cloud-arrow-up"></i> แนบไฟล์อัพโหลดเอกสาร
-            </button>
-            <a href="/logout" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1">
-                <i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ
-            </a>
-        </div>
-    </div>
-
-    <!-- Document Cards View -->
-    <div class="space-y-3">
-        <h2 class="text-lg font-bold text-slate-700">รายการเอกสารของคุณ</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <?php if (count($documents) === 0): ?>
-                <div class="col-span-3 text-center py-12 bg-white rounded-xl border border-slate-200 text-slate-400">
-                    ยังไม่มีเอกสารที่อัพโหลด กดปุ่ม "แนบไฟล์อัพโหลดเอกสาร" ด้านบนเพื่อเริ่มต้น
-                </div>
-            <?php else: ?>
-                <?php foreach ($documents as$doc): ?>
-                    <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition">
-                        <div class="flex justify-between items-start mb-4">
-                            <span class="bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-full uppercase">
-                                <?= htmlspecialchars($doc['doc_type']) ?>
-                            </span>
-                            <i class="<?= $doc['file_type'] === 'file' ? 'fa-solid fa-file-pdf text-rose-500' : 'fa-solid fa-link text-blue-500' ?> text-2xl"></i>
-                        </div>
-                        <h3 class="font-semibold text-slate-800 truncate" title="<?= htmlspecialchars($doc['original_name'] ?:$doc['file_path_or_link']) ?>">
-                            <?= htmlspecialchars($doc['original_name'] ?:$doc['file_path_or_link']) ?>
-                        </h3>
-                        <p class="text-xs text-slate-400 mt-1">วันที่อัพโหลด: <?= date('d/m/Y H:i', strtotime($doc['created_at'])) ?></p>
-                        <div class="mt-4 pt-4 border-t border-slate-100">
-                            <button onclick="previewFile('<?= htmlspecialchars($doc['file_path_or_link']) ?>', '<?=$doc['file_type'] ?>')" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center gap-1">
-                                <i class="fa-solid fa-eye"></i> ดูตัวอย่างเอกสาร
-                            </button>
-                        </div>
+<!-- Document Cards View -->
+<div class="space-y-3">
+    <h2 class="text-lg font-bold text-slate-700">รายการเอกสารของคุณ</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <?php if (count($documents) === 0): ?>
+            <div class="col-span-3 text-center py-12 bg-white rounded-2xl border border-slate-200 text-slate-400">
+                ยังไม่มีเอกสารที่อัพโหลด กดปุ่ม "แนบไฟล์อัพโหลดเอกสาร" ด้านบนเพื่อเริ่มต้น
+            </div>
+        <?php else: ?>
+            <?php foreach ($documents as$doc): ?>
+                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-full uppercase">
+                            <?= htmlspecialchars($doc['doc_type']) ?>
+                        </span>
+                        <i class="<?= $doc['file_type'] === 'file' ? 'fa-solid fa-file-pdf text-rose-500' : 'fa-solid fa-link text-blue-500' ?> text-2xl"></i>
                     </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
-    </div>
-
-    <!-- Evaluator Comments -->
-    <?php if (count($comments) > 0): ?>
-    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-        <h2 class="text-lg font-bold text-slate-700 flex items-center gap-2">
-            <i class="fa-solid fa-comments text-amber-500"></i> คำแนะนำจากผู้ประเมิน
-        </h2>
-        <div class="space-y-3">
-            <?php foreach ($comments as$c): ?>
-                <div class="bg-amber-50/50 p-4 rounded-xl border border-amber-200/60">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="font-semibold text-slate-800 text-sm"><?= htmlspecialchars($c['evaluator_name']) ?></span>
-                        <span class="text-xs text-slate-400"><?= date('d/m/Y H:i', strtotime($c['created_at'])) ?></span>
+                    <h3 class="font-semibold text-slate-800 truncate" title="<?= htmlspecialchars($doc['original_name'] ?:$doc['file_path_or_link']) ?>">
+                        <?= htmlspecialchars($doc['original_name'] ?:$doc['file_path_or_link']) ?>
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-1">วันที่อัพโหลด: <?= date('d/m/Y H:i', strtotime($doc['created_at'])) ?></p>
+                    <div class="mt-4 pt-4 border-t border-slate-100">
+                        <button onclick="previewFile('<?= htmlspecialchars($doc['file_path_or_link']) ?>', '<?=$doc['file_type'] ?>')" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center gap-1">
+                            <i class="fa-solid fa-eye"></i> ดูตัวอย่างเอกสาร
+                        </button>
                     </div>
-                    <p class="text-slate-600 text-sm"><?= nl2br(htmlspecialchars($c['comments'])) ?></p>
                 </div>
             <?php endforeach; ?>
-        </div>
+        <?php endif; ?>
     </div>
-    <?php endif; ?>
-
 </div>
+
+<!-- Evaluator Comments -->
+<?php if (count($comments) > 0): ?>
+<div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+    <h2 class="text-lg font-bold text-slate-700 flex items-center gap-2">
+        <i class="fa-solid fa-comments text-amber-500"></i> คำแนะนำจากผู้ประเมิน
+    </h2>
+    <div class="space-y-3">
+        <?php foreach ($comments as$c): ?>
+            <div class="bg-amber-50/50 p-4 rounded-xl border border-amber-200/60">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="font-semibold text-slate-800 text-sm"><?= htmlspecialchars($c['evaluator_num']) ?></span>
+                    <span class="text-xs text-slate-400"><?= date('d/m/Y H:i', strtotime($c['created_at'])) ?></span>
+                </div>
+                <p class="text-slate-600 text-sm"><?= nl2br(htmlspecialchars($c['comments'])) ?></p>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>
 
 <!-- Modal อัพโหลดเอกสาร (เลือกได้ 3 ไฟล์) -->
 <div id="uploadModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 overflow-y-auto">
@@ -118,7 +95,6 @@ $comments =$stmt_comment->fetchAll();
         </div>
 
         <form id="uploadForm" enctype="multipart/form-data" class="space-y-6">
-            
             <!-- 1. เอกสาร PA2 -->
             <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                 <div class="flex justify-between items-center">
@@ -186,31 +162,35 @@ $comments =$stmt_comment->fetchAll();
     </div>
 </div>
 
-<script>
-<!-- แท็ก Script สำหรับเปิด-ปิด Modal และควบคุมฟอร์ม -->
+<!-- Modal แสดงตัวอย่างเอกสาร (Preview Modal) -->
+<div id="previewModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white w-full max-w-4xl h-[85vh] rounded-2xl shadow-xl p-4 flex flex-col">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-file-lines text-indigo-600"></i> ตัวอย่างเอกสาร
+            </h3>
+            <button onclick="closePreviewModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+        <div id="previewContainer" class="flex-1 border border-slate-200 rounded-xl bg-slate-100 overflow-hidden relative"></div>
+    </div>
+</div>
 
+<script>
 function openUploadModal() { 
     const modal = document.getElementById('uploadModal');
-    if (modal) {
-        modal.classList.remove('hidden'); 
-        modal.classList.add('flex'); 
-    }
+    if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
 }
 
 function closeUploadModal() { 
     const modal = document.getElementById('uploadModal');
-    if (modal) {
-        modal.classList.add('hidden'); 
-        modal.classList.remove('flex'); 
-    }
+    if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
 }
 
 function closePreviewModal() { 
     const modal = document.getElementById('previewModal');
-    if (modal) {
-        modal.classList.add('hidden'); 
-        modal.classList.remove('flex'); 
-    }
+    if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
 }
 
 function toggleType(docKey, type) {
@@ -222,6 +202,29 @@ function toggleType(docKey, type) {
     } else {
         if (fileGroup) fileGroup.classList.add('hidden');
         if (linkGroup) linkGroup.classList.remove('hidden');
+    }
+}
+
+function previewFile(url, type) {
+    const container = document.getElementById('previewContainer');
+    if (!container) return;
+    
+    if (type === 'link') { 
+        window.open(url, '_blank'); 
+        return; 
+    }
+    
+    const ext = url.split('.').pop().toLowerCase();
+    if (ext === 'pdf') {
+        container.innerHTML = `<iframe src="${url}" class="w-full h-full border-0"></iframe>`;
+    } else {
+        container.innerHTML = `<div class="w-full h-full flex items-center justify-center p-4 bg-slate-900/10"><img src="${url}" class="max-h-full max-w-full object-contain rounded-lg shadow-md"></div>`;
+    }
+    
+    const previewModal = document.getElementById('previewModal');
+    if (previewModal) {
+        previewModal.classList.remove('hidden');
+        previewModal.classList.add('flex');
     }
 }
 
@@ -275,89 +278,6 @@ function submitUpload() {
     })
     .catch(() => Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาดในการเชื่อมต่อ' }));
 }
-
-function previewFile(url, type) {
-    const container = document.getElementById('previewContainer');
-    if (!container) return;
-    
-    if (type === 'link') { 
-        window.open(url, '_blank'); 
-        return; 
-    }
-    
-    const ext = url.split('.').pop().toLowerCase();
-    if (ext === 'pdf') {
-        container.innerHTML = `<iframe src="${url}" class="w-full h-full border-0"></iframe>`;
-    } else {
-        container.innerHTML = `<div class="w-full h-full flex items-center justify-center p-4"><img src="${url}" class="max-h-full max-w-full object-contain rounded-lg"></div>`;
-    }
-    
-    const previewModal = document.getElementById('previewModal');
-    if (previewModal) {
-        previewModal.classList.remove('hidden');
-        previewModal.classList.add('flex');
-    }
-}
-
-// ฟังก์ชั่นสลับ ระหว่าง ไฟล์ กับ ลิงก์
-function toggleType(docKey, type) {
-    if (type === 'file') {
-        document.getElementById(`input_${docKey}_file`).classList.remove('hidden');
-        document.getElementById(`input_${docKey}_link`).classList.add('hidden');
-    } else {
-        document.getElementById(`input_${docKey}_file`).classList.add('hidden');
-        document.getElementById(`input_${docKey}_link`).classList.remove('hidden');
-    }
-}
-
-// ตรวจสอบข้อมูลก่อนส่ง API
-function submitUpload() {
-    const formData = new FormData(document.getElementById('uploadForm'));
-    const docTypes = ['pa2', 'info', 'report'];
-    let hasData = false;
-    let isValid = true;
-
-    docTypes.forEach(type => {
-        const kind = document.querySelector(`input[name="kind_${type}"]:checked`).value;
-        if (kind === 'file') {
-            const fileInput = document.querySelector(`input[name="file_${type}"]`);
-            if (fileInput && fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                hasData = true;
-                if (file.size > 15 * 1024 * 1024) {
-                    Swal.fire({ icon: 'error', title: 'ไฟล์มีขนาดใหญ่เกินไป', text: `ไฟล์ในรายการ ${type.toUpperCase()} มีขนาดเกิน 15 MB` });
-                    isValid = false;
-                }
-            }
-        } else {
-            const linkInput = document.querySelector(`input[name="link_${type}"]`).value.trim();
-            if (linkInput !== '') {
-                hasData = true;
-            }
-        }
-    });
-
-    if (!isValid) return;
-
-    if (!hasData) {
-        Swal.fire({ icon: 'warning', title: 'กรุณาแนบเอกสารอย่างน้อย 1 รายการ' });
-        return;
-    }
-
-    Swal.fire({ title: 'กำลังอัพโหลดเอกสาร...', text: 'โปรดรอสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
-    fetch('/api/upload_doc', { method: 'POST', body: formData })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            closeUploadModal();
-            Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ!', text: 'อัพโหลดเอกสารเรียบร้อยแล้ว' }).then(() => location.reload());
-        } else {
-            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: data.message });
-        }
-    })
-    .catch(() => Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาดในการเชื่อมต่อ' }));
-}
 </script>
-</body>
-</html>
+
+<?php require_once __DIR__ . '/includes/footer.php'; ?>
