@@ -1,0 +1,7 @@
+# ไฟล์ซ่อนความลับ
+.env
+.env.local
+.env.production
+
+# โฟลเดอร์ที่ไม่ต้องการ Push ขึ้น Git
+node_modules/

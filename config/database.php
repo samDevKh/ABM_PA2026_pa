@@ -1,9 +1,9 @@
 <?php
-$host = getenv('DB_HOST') ?: 'localhost';
+$host = getenv('DB_HOST') ?: 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com';
 $db   = getenv('DB_NAME') ?: 'pa_system';
-$user = getenv('DB_USER') ?: 'root';
-$pass = getenv('DB_PASS') ?: '';
-$port = getenv('DB_PORT') ?: '3306';
+$user = getenv('DB_USER') ?: '3HASw3ZZG31bSpm.root';
+$pass = getenv('DB_PASS') ?: '4NgLXjROEKTfMzcA';
+$port = getenv('DB_PORT') ?: '4000';
 
 $dsn = "mysql:host=$host;port=$port;dbname=$db;charset=utf8mb4";
 $options = [
