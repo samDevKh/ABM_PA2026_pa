@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/config/database.php';
 
-if (!isset($_SESSION['user_id']) \vert{}\vert{}$_SESSION['role'] !== 'teacher') {
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
     header('Location: /login');
     exit;
 }
