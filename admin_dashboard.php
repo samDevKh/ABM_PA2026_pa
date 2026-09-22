@@ -8,20 +8,29 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 
 $message = '';
 $error = '';
+
+
 // 1. จัดการการเพิ่มผู้ประเมินใหม่ (Evaluator)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) &&$_POST['action'] === 'add_evaluator') {
+// 1. จัดการการเพิ่มผู้ประเมินใหม่ (Evaluator)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_evaluator') {
     $fullname = trim($_POST['fullname'] ?? '');
     $username = trim($_POST['username'] ?? '');
     $password = trim($_POST['password'] ?? '');
+    $evaluator_num = trim($_POST['evaluator_num'] ?? '');
+    $position = trim($_POST['position'] ?? '');
 
-    if (!empty($fullname) && !empty($username) && !empty($password)) {
+    if (!empty($fullname) && !empty($username) && !empty($password) && !empty($evaluator_num)) {
         // เช็คว่า username ซ้ำหรือไม่
-        $stmtChk =$pdo->prepare("SELECT id FROM users WHERE username = ?");
+        $stmtChk = $pdo->prepare("SELECT id FROM users WHERE username = ?");
         $stmtChk->execute([$username]);
-        if ($stmtChk->rowCount() > 0) {$_SESSION['flash_error'] = 'ชื่อผู้ใช้นี้ถูกใช้งานแล้ว';
+        
+        if ($stmtChk->rowCount() > 0) {
+            $_SESSION['flash_error'] = 'ชื่อผู้ใช้นี้ถูกใช้งานแล้ว';
         } else {
-            $stmtIns =$pdo->prepare("INSERT INTO users (username, password, fullname, role) VALUES (?, ?, ?, 'evaluator')");
-            if ($stmtIns->execute([$username,$password, $fullname])) {$_SESSION['flash_success'] = 'เพิ่มบัญชีผู้ประเมินเรียบร้อยแล้ว';
+            // บันทึกลงคอลัมน์ evaluator_num และ position ที่มีอยู่แล้ว
+            $stmtIns = $pdo->prepare("INSERT INTO users (username, password, fullname, role, evaluator_num, position) VALUES (?, ?, ?, 'evaluator', ?, ?)");
+            if ($stmtIns->execute([$username, $password, $fullname, $evaluator_num, $position])) {
+                $_SESSION['flash_success'] = 'เพิ่มบัญชีผู้ประเมินเรียบร้อยแล้ว';
             } else {
                 $_SESSION['flash_error'] = 'เกิดข้อผิดพลาดในการบันทึกข้อมูล';
             }
@@ -29,6 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) &&$_POST['a
     } else {
         $_SESSION['flash_error'] = 'กรุณากรอกข้อมูลให้ครบถ้วน';
     }
+    
     header('Location: /admin');
     exit;
 }
@@ -126,28 +136,50 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 
     <!-- Add Evaluator Form (1 Col) -->
+    <!-- Add Evaluator Form -->
     <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-        <h3 class="font-bold text-slate-800 flex items-center gap-2 text-sm border-b pb-3">
-            <i class="fa-solid fa-user-plus text-emerald-600"></i> เพิ่มบัญชีกรรมการประเมิน
-        </h3>
-        <form method="POST" class="space-y-3">
-            <input type="hidden" name="action" value="add_evaluator">
-            <div>
-                <label class="block text-xs font-medium text-slate-700 mb-1">ชื่อ-นามสกุล กรรมการ</label>
-                <input type="text" name="fullname" placeholder="นายวิชัย ใฝ่เรียนรู้" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-            </div>
-            <div>
-                <label class="block text-xs font-medium text-slate-700 mb-1">ชื่อผู้ใช้งาน (Username)</label>
-                <input type="text" name="username" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-            </div>
-            <div>
-                <label class="block text-xs font-medium text-slate-700 mb-1">รหัสผ่าน (Password)</label>
-                <input type="password" name="password" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-            </div>
-            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium py-2.5 rounded-lg transition">
-                + เพิ่มผู้ประเมิน
-            </button>
-        </form>
+    <h3 class="font-bold text-slate-800 flex items-center gap-2 text-sm border-b pb-3">
+        <i class="fa-solid fa-user-plus text-emerald-600"></i> เพิ่มบัญชีกรรมการประเมิน
+    </h3>
+    <form method="POST" class="space-y-3">
+        <input type="hidden" name="action" value="add_evaluator">
+        
+        <div>
+        <label class="block text-xs font-medium text-slate-700 mb-1">ชื่อ-นามสกุล กรรมการ</label>
+        <input type="text" name="fullname" placeholder="นายจงใจ สอนเด่น" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        </div>
+
+        <!-- ลิงก์เข้าคอลัมน์ evaluator_num -->
+        <div>
+        <label class="block text-xs font-medium text-slate-700 mb-1">บทบาทในการประเมิน</label>
+        <select name="evaluator_num" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white">
+            <option value="">-- เลือกบทบาท --</option>
+            <option value="1">ประธานกรรมการ (กรรมการคนที่ 1)</option>
+            <option value="2">กรรมการคนที่ 2</option>
+            <option value="3">กรรมการคนที่ 3</option>
+        </select>
+        </div>
+
+        <!-- ลิงก์เข้าคอลัมน์ position -->
+        <div>
+        <label class="block text-xs font-medium text-slate-700 mb-1">ตำแหน่ง / หน่วยงาน</label>
+        <input type="text" name="position" placeholder="เช่น ผู้อำนวยการโรงเรียนสอนดี" class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        </div>
+
+        <div>
+        <label class="block text-xs font-medium text-slate-700 mb-1">ชื่อผู้ใช้งาน (Username)</label>
+        <input type="text" name="username" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        </div>
+
+        <div>
+        <label class="block text-xs font-medium text-slate-700 mb-1">รหัสผ่าน (Password)</label>
+        <input type="password" name="password" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        </div>
+
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium py-2.5 rounded-lg transition">
+        + เพิ่มผู้ประเมิน
+        </button>
+    </form>
     </div>
 
 </div>
@@ -205,7 +237,7 @@ require_once __DIR__ . '/includes/header.php';
 </div>
 
 <!-- Modal สรุปผล PA3 (PA3 Summary View & Print Modal) -->
-<div id="pa3Modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-4 overflow-y-auto">
+<div id="pa3Modal" class="fixed inset-0 bg-black/60 hidden items-start mt-8 justify-center z-50 p-4 overflow-y-auto">
     <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl p-8 space-y-6 my-8 print:m-0 print:p-0 print:shadow-none print:w-full">
         
         <!-- Header (Non-Print Buttons) -->
@@ -265,23 +297,31 @@ require_once __DIR__ . '/includes/header.php';
             </div>
 
             <!-- เซ็นชื่อกรรมการ 3 ท่าน -->
-            <div class="pt-8 grid grid-cols-3 gap-4 text-center text-xs space-y-0">
-                <div class="space-y-8">
-                    <p>(ลงชื่อ).....................................................</p>
-                    <p class="font-medium" id="pa3Sign1">( ประธานกรรมการผู้ประเมิน )</p>
-                    <p class="text-slate-500">วันที่ ........ เดือน .................... พ.ศ. ......</p>
+             <div class="pt-8 space-y-8 text-center text-xs">
+                <!-- แถวบน: ประธานกรรมการ (อยู่ตรงกลาง) -->
+                <div class="flex justify-center">
+                    <div class="w-1/3 space-y-8">
+                        <p>(ลงชื่อ).....................................................</p>
+                        <p class="font-medium" id="pa3Sign1">( ประธานกรรมการ )</p>
+                        <p class="text-slate-500">วันที่ ........ เดือน .................... พ.ศ. ......</p>
+                    </div>
                 </div>
-                <div class="space-y-8">
-                    <p>(ลงชื่อ).....................................................</p>
-                    <p class="font-medium" id="pa3Sign2">( กรรมการผู้ประเมิน )</p>
-                    <p class="text-slate-500">วันที่ ........ เดือน .................... พ.ศ. ......</p>
-                </div>
-                <div class="space-y-8">
-                    <p>(ลงชื่อ).....................................................</p>
-                    <p class="font-medium" id="pa3Sign3">( กรรมการผู้ประเมิน )</p>
-                    <p class="text-slate-500">วันที่ ........ เดือน .................... พ.ศ. ......</p>
+
+                <!-- แถวล่าง: กรรมการอีก 2 คน (แบ่งคนละฝั่ง) -->
+                <div class="grid grid-cols-2 gap-8">
+                    <div class="space-y-8">
+                        <p>(ลงชื่อ).....................................................</p>
+                        <p class="font-medium" id="pa3Sign2">( กรรมการ )</p>
+                        <p class="text-slate-500">วันที่ ........ เดือน .................... พ.ศ. ......</p>
+                    </div>
+                    <div class="space-y-8">
+                        <p>(ลงชื่อ).....................................................</p>
+                        <p class="font-medium" id="pa3Sign3">( กรรมการ )</p>
+                        <p class="text-slate-500">วันที่ ........ เดือน .................... พ.ศ. ......</p>
+                    </div>
                 </div>
             </div>
+
 
         </div>
     </div>
@@ -317,7 +357,7 @@ new Chart(ctx, {
 // 2. เรียกดูสรุปผล PA3 รายบุคคล
 function viewPA3Summary(teacherId) {
     Swal.fire({ title: 'กำลังโหลดข้อมูล PA3...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
+    
     fetch(`api/get_pa3_summary.php?teacher_id=${teacherId}`)
     .then(res => res.json())
     .then(data => {
@@ -329,53 +369,55 @@ function viewPA3Summary(teacherId) {
 
             const evs = data.evaluators;
             const tbody = document.getElementById('pa3TableBody');
+
+            // ตรวจสอบความปลอดภัยของ Index 0, 1, 2
+            const ev1 = evs[0] || { sec1: '-', sec2: '-', total: '-', name: 'กรรมการคนที่ 1' };
+            const ev2 = evs[1] || { sec1: '-', sec2: '-', total: '-', name: 'กรรมการคนที่ 2' };
+            const ev3 = evs[2] || { sec1: '-', sec2: '-', total: '-', name: 'กรรมการคนที่ 3' };
+
             tbody.innerHTML = `
                 <tr>
                     <td class="p-2.5 border border-slate-300 text-left">ส่วนที่ 1 ข้อตกลงในการพัฒนางานตามมาตรฐานตำแหน่ง</td>
                     <td class="p-2.5 border border-slate-300 font-bold">60</td>
-                    <td class="p-2.5 border border-slate-300">${evs[0].sec1}</td>
-                    <td class="p-2.5 border border-slate-300">${evs[1].sec1}</td>
-                    <td class="p-2.5 border border-slate-300">${evs[2].sec1}</td>
+                    <td class="p-2.5 border border-slate-300">${ev1.sec1}</td>
+                    <td class="p-2.5 border border-slate-300">${ev2.sec1}</td>
+                    <td class="p-2.5 border border-slate-300">${ev3.sec1}</td>
                 </tr>
                 <tr>
                     <td class="p-2.5 border border-slate-300 text-left">ส่วนที่ 2 ข้อตกลงในการพัฒนางาน ที่เสนอเป็นประเด็นท้าทายฯ</td>
                     <td class="p-2.5 border border-slate-300 font-bold">40</td>
-                    <td class="p-2.5 border border-slate-300">${evs[0].sec2}</td>
-                    <td class="p-2.5 border border-slate-300">${evs[1].sec2}</td>
-                    <td class="p-2.5 border border-slate-300">${evs[2].sec2}</td>
+                    <td class="p-2.5 border border-slate-300">${ev1.sec2}</td>
+                    <td class="p-2.5 border border-slate-300">${ev2.sec2}</td>
+                    <td class="p-2.5 border border-slate-300">${ev3.sec2}</td>
                 </tr>
                 <tr class="bg-slate-50 font-bold">
                     <td class="p-2.5 border border-slate-300 text-left">รวมคะแนนทั้งหมด</td>
                     <td class="p-2.5 border border-slate-300">100</td>
-                    <td class="p-2.5 border border-slate-300 text-indigo-700">${evs[0].total}</td>
-                    <td class="p-2.5 border border-slate-300 text-indigo-700">${evs[1].total}</td>
-                    <td class="p-2.5 border border-slate-300 text-indigo-700">${evs[2].total}</td>
+                    <td class="p-2.5 border border-slate-300 text-indigo-700">${ev1.total}</td>
+                    <td class="p-2.5 border border-slate-300 text-indigo-700">${ev2.total}</td>
+                    <td class="p-2.5 border border-slate-300 text-indigo-700">${ev3.total}</td>
                 </tr>
             `;
 
+            // ใส่ชื่อกรรมการเซ็นชื่อ
+            document.getElementById('pa3Sign1').innerText = `(${ev1.name})`;
+            document.getElementById('pa3Sign2').innerText = `(${ev2.name})`;
+            document.getElementById('pa3Sign3').innerText = `(${ev3.name})`;
+
+            // แสดงสถานะผ่าน/ไม่ผ่าน
             const box = document.getElementById('pa3ResultBox');
             const checks = document.getElementById('pa3StatusCheckboxes');
             
             if (data.completed_count < 3) {
                 box.className = "p-4 rounded-xl border border-amber-200 bg-amber-50 text-xs space-y-2";
-                checks.innerHTML = `<span class="text-amber-800 font-bold">⚠️ ยังประเมินไม่ครบทั้ง 3 ท่าน (ประเมินแล้ว ${data.completed_count}/3 ท่าน)</span>`;
+                checks.innerHTML = `<span class="text-amber-800 font-bold">ยังประเมินไม่ครบทั้ง 3 ท่าน (ประเมินแล้ว ${data.completed_count}/3 ท่าน)</span>`;
             } else if (data.is_all_pass) {
                 box.className = "p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-xs space-y-2";
-                checks.innerHTML = `
-                    <span class="font-bold text-emerald-800 text-sm">☑ ผ่านเกณฑ์</span>
-                    <span class="text-slate-400 text-sm">☐ ไม่ผ่านเกณฑ์</span>
-                `;
+                checks.innerHTML = `<span class="font-bold text-emerald-800 text-sm"> [✓] ผ่านเกณฑ์</span> <span class="text-slate-400 text-sm ml-4">[ ] ไม่ผ่านเกณฑ์</span>`;
             } else {
                 box.className = "p-4 rounded-xl border border-rose-200 bg-rose-50 text-xs space-y-2";
-                checks.innerHTML = `
-                    <span class="text-slate-400 text-sm">☐ ผ่านเกณฑ์</span>
-                    <span class="font-bold text-rose-800 text-sm">☑ ไม่ผ่านเกณฑ์</span>
-                `;
+                checks.innerHTML = `<span class="text-slate-400 text-sm">[ ] ผ่านเกณฑ์</span> <span class="font-bold text-rose-800 text-sm ml-4">[✓] ไม่ผ่านเกณฑ์</span>`;
             }
-
-            document.getElementById('pa3Sign1').innerText = `( ${evs[0].name} )`;
-            document.getElementById('pa3Sign2').innerText = `( ${evs[1].name} )`;
-            document.getElementById('pa3Sign3').innerText = `( ${evs[2].name} )`;
 
             const modal = document.getElementById('pa3Modal');
             modal.classList.remove('hidden');
