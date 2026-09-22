@@ -159,9 +159,9 @@ require_once __DIR__ . '/includes/header.php';
     <?php endif; ?>
 </div>
 
-<!-- Modal: ฟอร์มแบบประเมินตามวิทยฐานะ -->
+<!-- Modal: ฟอร์มแบบประเมินตามวิทยฐานะ (ฉบับเปลี่ยนเป็น Checkbox / Radio) -->
 <div id="evalModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-4 overflow-y-auto">
-    <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl p-6 space-y-5 my-8 max-h-[90vh] flex flex-col">
+    <div class="bg-white w-full max-w-5xl rounded-2xl shadow-2xl p-6 space-y-5 my-8 max-h-[90vh] flex flex-col">
         
         <!-- Modal Header -->
         <div class="flex justify-between items-center border-b pb-3">
@@ -187,8 +187,16 @@ require_once __DIR__ . '/includes/header.php';
                     <table class="w-full text-left text-xs text-slate-700">
                         <thead class="bg-slate-100 text-slate-800 font-bold uppercase border-b border-slate-200">
                             <tr>
-                                <th class="p-3 w-7/12">ลักษณะงานที่ปฏิบัติตามมาตรฐานตำแหน่ง (15 ตัวชี้วัด)</th>
-                                <th class="p-3 w-5/12 text-center">ระดับการปฏิบัติ (1 - 4 คะแนน)</th>
+                                <th class="p-3 w-6/12">ลักษณะงานที่ปฏิบัติตามมาตรฐานตำแหน่ง (15 ตัวชี้วัด)</th>
+                                <th class="p-3 w-6/12 text-center">
+                                    ระดับการปฏิบัติที่คาดหวัง<br>
+                                    <div class="grid grid-cols-4 gap-1 mt-1 text-[11px] font-semibold text-slate-600">
+                                        <span class="text-rose-600">1 (ต่ำกว่ามาก)</span>
+                                        <span class="text-amber-600">2 (ต่ำกว่า)</span>
+                                        <span class="text-blue-600">3 (ตามระดับ)</span>
+                                        <span class="text-emerald-600">4 (สูงกว่า)</span>
+                                    </div>
+                                </th>
                             </tr>
                         </thead>
                         <tbody id="criteriaTableBody" class="divide-y divide-slate-100">
@@ -205,33 +213,62 @@ require_once __DIR__ . '/includes/header.php';
                     <span class="text-xs bg-indigo-600 text-white px-2.5 py-1 rounded-lg font-medium">คะแนนเต็ม 40</span>
                 </div>
 
-                <div class="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
-                    <div class="flex justify-between items-center">
-                        <span class="font-bold text-slate-800">1. วิธีการดำเนินการ (20 คะแนน)</span>
-                        <select name="sec2_score1" onchange="calculateScores()" class="border border-slate-300 rounded-lg p-1.5 text-xs bg-white font-medium">
-                            <option value="5">1 - ต่ำกว่าระดับฯ มาก (5 คะแนน)</option>
-                            <option value="10">2 - ต่ำกว่าระดับฯ (10 คะแนน)</option>
-                            <option value="15" selected>3 - ตามระดับฯ ที่คาดหวัง (15 คะแนน)</option>
-                            <option value="20">4 - สูงกว่าระดับฯ ที่คาดหวัง (20 คะแนน)</option>
-                        </select>
+                <div class="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+                    <!-- 1. วิธีดำเนินการ (20 คะแนน) -->
+                    <div class="space-y-2">
+                        <span class="font-bold text-slate-800 block">1. วิธีการดำเนินการ (20 คะแนน)</span>
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                            <label class="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100">
+                                <input type="radio" name="sec2_score1" value="5" onchange="calculateScores()"> 1 - ต่ำกว่ามาก (5)
+                            </label>
+                            <label class="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100">
+                                <input type="radio" name="sec2_score1" value="10" onchange="calculateScores()"> 2 - ต่ำกว่า (10)
+                            </label>
+                            <label class="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-indigo-50 border-indigo-200">
+                                <input type="radio" name="sec2_score1" value="15" checked onchange="calculateScores()"> 3 - ตามระดับ (15)
+                            </label>
+                            <label class="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-emerald-50 border-emerald-200">
+                                <input type="radio" name="sec2_score1" value="20" onchange="calculateScores()"> 4 - สูงกว่า (20)
+                            </label>
+                        </div>
                     </div>
-                    <div class="flex justify-between items-center border-t border-slate-200 pt-3">
-                        <span class="font-bold text-slate-800">2.1 ผลลัพธ์การเรียนรู้เชิงปริมาณ (10 คะแนน)</span>
-                        <select name="sec2_score2" onchange="calculateScores()" class="border border-slate-300 rounded-lg p-1.5 text-xs bg-white font-medium">
-                            <option value="2.5">1 - ต่ำกว่าระดับฯ มาก (2.5 คะแนน)</option>
-                            <option value="5">2 - ต่ำกว่าระดับฯ (5 คะแนน)</option>
-                            <option value="7.5" selected>3 - ตามระดับฯ ที่คาดหวัง (7.5 คะแนน)</option>
-                            <option value="10">4 - สูงกว่าระดับฯ ที่คาดหวัง (10 คะแนน)</option>
-                        </select>
+
+                    <!-- 2.1 เชิงปริมาณ (10 คะแนน) -->
+                    <div class="space-y-2 border-t border-slate-200 pt-3">
+                        <span class="font-bold text-slate-800 block">2.1 ผลลัพธ์การเรียนรู้เชิงปริมาณ (10 คะแนน)</span>
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                            <label class="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100">
+                                <input type="radio" name="sec2_score2" value="2.5" onchange="calculateScores()"> 1 - ต่ำกว่ามาก (2.5)
+                            </label>
+                            <label class="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100">
+                                <input type="radio" name="sec2_score2" value="5" onchange="calculateScores()"> 2 - ต่ำกว่า (5)
+                            </label>
+                            <label class="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-indigo-50 border-indigo-200">
+                                <input type="radio" name="sec2_score2" value="7.5" checked onchange="calculateScores()"> 3 - ตามระดับ (7.5)
+                            </label>
+                            <label class="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-emerald-50 border-emerald-200">
+                                <input type="radio" name="sec2_score2" value="10" onchange="calculateScores()"> 4 - สูงกว่า (10)
+                            </label>
+                        </div>
                     </div>
-                    <div class="flex justify-between items-center border-t border-slate-200 pt-3">
-                        <span class="font-bold text-slate-800">2.2 ผลลัพธ์การเรียนรู้เชิงคุณภาพ (10 คะแนน)</span>
-                        <select name="sec2_score3" onchange="calculateScores()" class="border border-slate-300 rounded-lg p-1.5 text-xs bg-white font-medium">
-                            <option value="2.5">1 - ต่ำกว่าระดับฯ มาก (2.5 คะแนน)</option>
-                            <option value="5">2 - ต่ำกว่าระดับฯ (5 คะแนน)</option>
-                            <option value="7.5" selected>3 - ตามระดับฯ ที่คาดหวัง (7.5 คะแนน)</option>
-                            <option value="10">4 - สูงกว่าระดับฯ ที่คาดหวัง (10 คะแนน)</option>
-                        </select>
+
+                    <!-- 2.2 เชิงคุณภาพ (10 คะแนน) -->
+                    <div class="space-y-2 border-t border-slate-200 pt-3">
+                        <span class="font-bold text-slate-800 block">2.2 ผลลัพธ์การเรียนรู้เชิงคุณภาพ (10 คะแนน)</span>
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                            <label class="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100">
+                                <input type="radio" name="sec2_score3" value="2.5" onchange="calculateScores()"> 1 - ต่ำกว่ามาก (2.5)
+                            </label>
+                            <label class="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100">
+                                <input type="radio" name="sec2_score3" value="5" onchange="calculateScores()"> 2 - ต่ำกว่า (5)
+                            </label>
+                            <label class="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-indigo-50 border-indigo-200">
+                                <input type="radio" name="sec2_score3" value="7.5" checked onchange="calculateScores()"> 3 - ตามระดับ (7.5)
+                            </label>
+                            <label class="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 cursor-pointer hover:bg-emerald-50 border-emerald-200">
+                                <input type="radio" name="sec2_score3" value="10" onchange="calculateScores()"> 4 - สูงกว่า (10)
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -287,13 +324,15 @@ require_once __DIR__ . '/includes/header.php';
 </div>
 
 <script>
+// ปรับฟังก์ชันเปิด Modal แบบประเมิน
 function openEvaluationModal(teacherId, teacherName, academicStanding) {
     document.getElementById('formTeacherId').value = teacherId;
     document.getElementById('modalTeacherName').innerText = 'แบบประเมิน PA2 - ' + teacherName;
     document.getElementById('modalTeacherStanding').innerText = 'วิทยฐานะ: ' + academicStanding;
 
-    // ดึงเกณฑ์ประเมินวิทยฐานะจาก pa_criteria.js
     const criteriaData = PA_CRITERIA[academicStanding] || PA_CRITERIA['ครู (ยังไม่มีวิทยฐานะ)'];
+    
+    // 1. สร้างรายการข้อที่ 1-15 ในส่วนที่ 1
     const tbody = document.getElementById('criteriaTableBody');
     tbody.innerHTML = '';
 
@@ -302,18 +341,37 @@ function openEvaluationModal(teacherId, teacherName, academicStanding) {
         const row = document.createElement('tr');
         row.className = 'hover:bg-slate-50';
         row.innerHTML = `
-            <td class="p-3 text-slate-700 leading-relaxed">${itemText}</td>
+            <td class="p-3 text-slate-700 leading-relaxed font-medium">${itemText}</td>
             <td class="p-3 text-center">
-                <select name="sec1_item_${itemNum}" onchange="calculateScores()" class="border border-slate-300 rounded-lg p-1.5 text-xs bg-white font-medium focus:ring-2 focus:ring-indigo-500">
-                    <option value="1">1 - ต่ำกว่าระดับฯ มาก (1 คะแนน)</option>
-                    <option value="2">2 - ต่ำกว่าระดับฯ (2 คะแนน)</option>
-                    <option value="3" selected>3 - ตามระดับฯ ที่คาดหวัง (3 คะแนน)</option>
-                    <option value="4">4 - สูงกว่าระดับฯ ที่คาดหวัง (4 คะแนน)</option>
-                </select>
+                <div class="grid grid-cols-4 gap-1 items-center justify-items-center">
+                    <label class="cursor-pointer p-1.5 rounded-lg hover:bg-rose-50 flex flex-col items-center">
+                        <input type="radio" name="sec1_item_${itemNum}" value="1" onchange="calculateScores()" class="w-4 h-4 text-rose-600 focus:ring-rose-500">
+                        <span class="text-[10px] text-slate-500 mt-0.5">1</span>
+                    </label>
+                    <label class="cursor-pointer p-1.5 rounded-lg hover:bg-amber-50 flex flex-col items-center">
+                        <input type="radio" name="sec1_item_${itemNum}" value="2" onchange="calculateScores()" class="w-4 h-4 text-amber-600 focus:ring-amber-500">
+                        <span class="text-[10px] text-slate-500 mt-0.5">2</span>
+                    </label>
+                    <label class="cursor-pointer p-1.5 rounded-lg hover:bg-indigo-50 flex flex-col items-center">
+                        <input type="radio" name="sec1_item_${itemNum}" value="3" checked onchange="calculateScores()" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500">
+                        <span class="text-[10px] text-slate-500 mt-0.5">3</span>
+                    </label>
+                    <label class="cursor-pointer p-1.5 rounded-lg hover:bg-emerald-50 flex flex-col items-center">
+                        <input type="radio" name="sec1_item_${itemNum}" value="4" onchange="calculateScores()" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500">
+                        <span class="text-[10px] text-slate-500 mt-0.5">4</span>
+                    </label>
+                </div>
             </td>
         `;
         tbody.appendChild(row);
     });
+
+    // 2. อัปเดตข้อความคำอธิบายส่วนที่ 2 (ประเด็นท้าทาย) ตามวิทยฐานะ
+    if (criteriaData.sec2_desc) {
+        document.getElementById('lblSec2Method').innerText = criteriaData.sec2_desc.method;
+        document.getElementById('lblSec2Quantity').innerText = criteriaData.sec2_desc.quantity;
+        document.getElementById('lblSec2Quality').innerText = criteriaData.sec2_desc.quality;
+    }
 
     calculateScores();
 
@@ -416,6 +474,94 @@ function closePreviewModal() {
     previewModal.classList.add('hidden');
     previewModal.classList.remove('flex');
 }
+
+function openEvaluationModal(teacherId, teacherName, academicStanding) {
+    document.getElementById('formTeacherId').value = teacherId;
+    document.getElementById('modalTeacherName').innerText = 'แบบประเมิน PA2 - ' + teacherName;
+    document.getElementById('modalTeacherStanding').innerText = 'วิทยฐานะ: ' + academicStanding;
+
+    const criteriaData = PA_CRITERIA[academicStanding] || PA_CRITERIA['ครู (ยังไม่มีวิทยฐานะ)'];
+    const tbody = document.getElementById('criteriaTableBody');
+    tbody.innerHTML = '';
+
+    criteriaData.items.forEach((itemText, idx) => {
+        const itemNum = idx + 1;
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-slate-50';
+        row.innerHTML = `
+            <td class="p-3 text-slate-700 leading-relaxed font-medium">${itemText}</td>
+            <td class="p-3 text-center">
+                <div class="grid grid-cols-4 gap-1 items-center justify-items-center">
+                    <label class="cursor-pointer p-1.5 rounded-lg hover:bg-rose-50 flex flex-col items-center">
+                        <input type="radio" name="sec1_item_${itemNum}" value="1" onchange="calculateScores()" class="w-4 h-4 text-rose-600 focus:ring-rose-500">
+                        <span class="text-[10px] text-slate-500 mt-0.5">1</span>
+                    </label>
+                    <label class="cursor-pointer p-1.5 rounded-lg hover:bg-amber-50 flex flex-col items-center">
+                        <input type="radio" name="sec1_item_${itemNum}" value="2" onchange="calculateScores()" class="w-4 h-4 text-amber-600 focus:ring-amber-500">
+                        <span class="text-[10px] text-slate-500 mt-0.5">2</span>
+                    </label>
+                    <label class="cursor-pointer p-1.5 rounded-lg hover:bg-indigo-50 flex flex-col items-center">
+                        <input type="radio" name="sec1_item_${itemNum}" value="3" checked onchange="calculateScores()" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500">
+                        <span class="text-[10px] text-slate-500 mt-0.5">3</span>
+                    </label>
+                    <label class="cursor-pointer p-1.5 rounded-lg hover:bg-emerald-50 flex flex-col items-center">
+                        <input type="radio" name="sec1_item_${itemNum}" value="4" onchange="calculateScores()" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500">
+                        <span class="text-[10px] text-slate-500 mt-0.5">4</span>
+                    </label>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    calculateScores();
+
+    const modal = document.getElementById('evalModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function calculateScores() {
+    // 1. คำนวณส่วนที่ 1 (15 ข้อ)
+    let sumSec1Raw = 0;
+    for (let i = 1; i <= 15; i++) {
+        const checkedRadio = document.querySelector(`input[name="sec1_item_${i}"]:checked`);
+        if (checkedRadio) {
+            sumSec1Raw += parseFloat(checkedRadio.value || 0);
+        }
+    }
+    const scoreSec1 = sumSec1Raw;
+
+    // 2. คำนวณส่วนที่ 2 (3 ข้อ)
+    const radioSec2_1 = document.querySelector('input[name="sec2_score1"]:checked');
+    const radioSec2_2 = document.querySelector('input[name="sec2_score2"]:checked');
+    const radioSec2_3 = document.querySelector('input[name="sec2_score3"]:checked');
+
+    const sec2_1 = parseFloat(radioSec2_1 ? radioSec2_1.value : 0);
+    const sec2_2 = parseFloat(radioSec2_2 ? radioSec2_2.value : 0);
+    const sec2_3 = parseFloat(radioSec2_3 ? radioSec2_3.value : 0);
+
+    const scoreSec2 = sec2_1 + sec2_2 + sec2_3;
+
+    // 3. รวมคะแนน
+    const totalScore = scoreSec1 + scoreSec2;
+
+    document.getElementById('txtSec1').innerText = scoreSec1.toFixed(2);
+    document.getElementById('txtSec2').innerText = scoreSec2.toFixed(2);
+    document.getElementById('txtTotalScore').innerText = totalScore.toFixed(2);
+
+    const badge = document.getElementById('badgePass');
+    if (totalScore >= 70) {
+        badge.className = 'ml-2 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800';
+        badge.innerText = 'ผ่านเกณฑ์ (≥70%)';
+    } else {
+        badge.className = 'ml-2 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800';
+        badge.innerText = 'ไม่ผ่านเกณฑ์ (<70%)';
+    }
+}
+
+
+
 </script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
