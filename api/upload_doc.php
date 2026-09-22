@@ -29,8 +29,8 @@ if (!file_exists($uploadDir)) {
 // ตรวจสอบว่าเป็นการแก้ไขไฟล์เดียวหรือไม่
 $singleType = $_POST['single_type'] ?? null;
 
-// ปรับให้รองรับทั้ง 5 ประเภทเอกสาร
-$docTypes = $singleType ? [$singleType] : ['pa1', 'pa2', 'info', 'report', 'other'];
+// ปรับให้เหลือเฉพาะ 3 ประเภทเอกสาร
+$docTypes = $singleType ? [$singleType] : ['report', 'info', 'other'];
 
 $uploadedCount = 0;
 $errors = [];

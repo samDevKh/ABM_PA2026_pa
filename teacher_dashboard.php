@@ -5,7 +5,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
     header('Location: /login');
     exit;
 }
-
 $user_id =$_SESSION['user_id'];
 
 // ดึงรายการเอกสารของครูคนนี้ (กรองเฉพาะรายการที่ไฟล์ยังอยู่จริง หรือเป็นลิงก์)
@@ -59,7 +58,14 @@ require_once __DIR__ . '/includes/header.php';
                 <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition space-y-3">
                     <div class="flex justify-between items-start">
                         <span class="bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-full uppercase">
-                            <?= htmlspecialchars($doc['doc_type']) ?>
+                            <?php 
+                                $docTypeLabel = [
+                                    'report' => 'รายงานผล PA',
+                                    'info' => 'Infographic',
+                                    'other' => 'อื่น ๆ'
+                                ];
+                                echo htmlspecialchars($docTypeLabel[$doc['doc_type']] ?? $doc['doc_type']);
+                            ?>
                         </span>
                         <i class="<?= $doc['file_type'] === 'file' ? 'fa-solid fa-file-pdf text-rose-500' : 'fa-solid fa-link text-blue-500' ?> text-2xl"></i>
                     </div>
@@ -108,65 +114,20 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 <?php endif; ?>
 
-<!-- Modal 1: อัพโหลดเอกสารรวม (5 รายการ) -->
+<!-- Modal 1: อัพโหลดเอกสารรวม (3 รายการ) -->
 <div id="uploadModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 overflow-y-auto">
     <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl p-6 space-y-5 my-8">
         <div class="flex justify-between items-center border-b pb-3">
             <h2 class="text-lg font-bold text-slate-800">แนบอัพโหลดเอกสารประเมิน PA</h2>
             <button onclick="closeUploadModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
         </div>
-        <form id="uploadForm" enctype="multipart/form-data" class="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+        <form id="uploadForm" enctype="multipart/form-data" class="space-y-4">
             
-            <!-- 1. บันทึกข้อตกลงฯ (PA1) -->
+            <!-- 1. รายงานผลการปฏิบัติตามข้อตกลง PA -->
             <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                 <div class="flex justify-between items-center">
                     <label class="font-bold text-slate-700 text-sm flex items-center gap-2">
-                        <span class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">1</span> บันทึกข้อตกลงในการพัฒนางาน (PA1)
-                    </label>
-                    <div class="flex gap-3 text-xs">
-                        <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_pa1" value="file" checked onclick="toggleType('pa1', 'file')"> ไฟล์</label>
-                        <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_pa1" value="link" onclick="toggleType('pa1', 'link')"> ลิงก์</label>
-                    </div>
-                </div>
-                <div id="input_pa1_file"><input type="file" name="file_pa1" accept=".pdf,.png,.jpg,.jpeg" class="w-full border border-slate-300 rounded-lg text-xs p-2 bg-white"></div>
-                <div id="input_pa1_link" class="hidden"><input type="url" name="link_pa1" placeholder="https://..." class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"></div>
-            </div>
-
-            <!-- 2. แบบประเมินฯ (PA2) -->
-            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                <div class="flex justify-between items-center">
-                    <label class="font-bold text-slate-700 text-sm flex items-center gap-2">
-                        <span class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">2</span> แบบประเมินผลการพัฒนางาน (PA2)
-                    </label>
-                    <div class="flex gap-3 text-xs">
-                        <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_pa2" value="file" checked onclick="toggleType('pa2', 'file')"> ไฟล์</label>
-                        <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_pa2" value="link" onclick="toggleType('pa2', 'link')"> ลิงก์</label>
-                    </div>
-                </div>
-                <div id="input_pa2_file"><input type="file" name="file_pa2" accept=".pdf,.png,.jpg,.jpeg" class="w-full border border-slate-300 rounded-lg text-xs p-2 bg-white"></div>
-                <div id="input_pa2_link" class="hidden"><input type="url" name="link_pa2" placeholder="https://..." class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"></div>
-            </div>
-
-            <!-- 3. ข้อมูลประกอบ (Infographic) -->
-            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                <div class="flex justify-between items-center">
-                    <label class="font-bold text-slate-700 text-sm flex items-center gap-2">
-                        <span class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">3</span> ข้อมูลประกอบ (Infographic)
-                    </label>
-                    <div class="flex gap-3 text-xs">
-                        <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_info" value="file" checked onclick="toggleType('info', 'file')"> ไฟล์</label>
-                        <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_info" value="link" onclick="toggleType('info', 'link')"> ลิงก์</label>
-                    </div>
-                </div>
-                <div id="input_info_file"><input type="file" name="file_info" accept=".pdf,.png,.jpg,.jpeg" class="w-full border border-slate-300 rounded-lg text-xs p-2 bg-white"></div>
-                <div id="input_info_link" class="hidden"><input type="url" name="link_info" placeholder="https://..." class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"></div>
-            </div>
-
-            <!-- 4. รายงานผลการปฏิบัติตามข้อตกลง PA -->
-            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                <div class="flex justify-between items-center">
-                    <label class="font-bold text-slate-700 text-sm flex items-center gap-2">
-                        <span class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">4</span> รายงานผลการปฏิบัติตามข้อตกลง PA
+                        <span class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">1</span> รายงานผลการปฏิบัติตามข้อตกลง PA
                     </label>
                     <div class="flex gap-3 text-xs">
                         <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_report" value="file" checked onclick="toggleType('report', 'file')"> ไฟล์</label>
@@ -177,11 +138,26 @@ require_once __DIR__ . '/includes/header.php';
                 <div id="input_report_link" class="hidden"><input type="url" name="link_report" placeholder="https://..." class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"></div>
             </div>
 
-            <!-- 5. เอกสารอื่น ๆ -->
+            <!-- 2. ข้อมูลประกอบ (Infographic) -->
             <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                 <div class="flex justify-between items-center">
                     <label class="font-bold text-slate-700 text-sm flex items-center gap-2">
-                        <span class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">5</span> เอกสารอื่น ๆ
+                        <span class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">2</span> ข้อมูลประกอบ (Infographic)
+                    </label>
+                    <div class="flex gap-3 text-xs">
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_info" value="file" checked onclick="toggleType('info', 'file')"> ไฟล์</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_info" value="link" onclick="toggleType('info', 'link')"> ลิงก์</label>
+                    </div>
+                </div>
+                <div id="input_info_file"><input type="file" name="file_info" accept=".pdf,.png,.jpg,.jpeg" class="w-full border border-slate-300 rounded-lg text-xs p-2 bg-white"></div>
+                <div id="input_info_link" class="hidden"><input type="url" name="link_info" placeholder="https://..." class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"></div>
+            </div>
+
+            <!-- 3. อื่น ๆ -->
+            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <div class="flex justify-between items-center">
+                    <label class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                        <span class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">3</span> อื่น ๆ
                     </label>
                     <div class="flex gap-3 text-xs">
                         <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_other" value="file" checked onclick="toggleType('other', 'file')"> ไฟล์</label>
@@ -274,7 +250,14 @@ function toggleType(dockey, type) {
 // เปิด Modal แก้ไขเฉพาะเอกสาร
 function openEditModal(docType) {
     document.getElementById('edit_single_type').value = docType;
-    document.getElementById('editModalTitle').innerText = 'แก้ไขเอกสาร ' + docType.toUpperCase();
+    
+    const docTypeLabel = {
+        'report': 'รายงานผล PA',
+        'info': 'Infographic',
+        'other': 'อื่น ๆ'
+    };
+    
+    document.getElementById('editModalTitle').innerText = 'แก้ไขเอกสาร ' + (docTypeLabel[docType] || docType.toUpperCase());
     const modal = document.getElementById('editModal');
     if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
 }
@@ -383,10 +366,10 @@ function previewFile(url, type) {
     }
 }
 
-// บันทึกอัปโหลดแบบรวม (ทั้ง 5 รายการ)
+// บันทึกอัพโหลดแบบรวม (ทั้ง 3 รายการ)
 function submitUpload() {
     const formData = new FormData(document.getElementById('uploadForm'));
-    const docTypes = ['pa1', 'pa2', 'info', 'report', 'other'];
+    const docTypes = ['report', 'info', 'other'];
     let hasData = false;
     let isValid = true;
 
@@ -400,7 +383,7 @@ function submitUpload() {
                 const file = fileInput.files[0];
                 hasData = true;
                 if (file.size > 15 * 1024 * 1024) {
-                    Swal.fire({ icon: 'error', title: 'ไฟล์มีขนาดใหญ่เกินไป', text: `ไฟล์ในรายการ ${type.toUpperCase()} มีขนาดเกิน 15 MB` });
+                    Swal.fire({ icon: 'error', title: 'ไฟล์มีขนาดใหญ่เกินไป', text: `ไฟล์มีขนาดเกิน 15 MB` });
                     isValid = false;
                 }
             }
