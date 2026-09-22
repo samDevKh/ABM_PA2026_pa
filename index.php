@@ -38,6 +38,11 @@ switch ($path) {
     case '/api/save_comment':
         require __DIR__ . '/api/save_comment.php';
         break;
+        
+    case '/api/get_pa3_summary':
+    case '/api/get_pa3_summary.php':
+        require __DIR__ . '/api/get_pa3_summary.php';
+        break;
 
     default:
         http_response_code(404);
