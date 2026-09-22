@@ -9,8 +9,8 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
 
 $user_id = $_SESSION['user_id'];
 
-// ดึงข้อมูล fullname เพื่อใช้เป็นชื่อโฟลเดอร์ส่วนตัว (id-fullname)
-$stmtUser = $pdo->prepare("SELECT fullname FROM users WHERE id = ?");
+// ดึงข้อมูล username เพื่อใช้เป็นชื่อโฟลเดอร์ส่วนตัว (id-username)
+$stmtUser = $pdo->prepare("SELECT username FROM users WHERE id = ?");
 $stmtUser->execute([$user_id]);
 $user = $stmtUser->fetch();
 
@@ -19,7 +19,7 @@ if (!$user) {
     exit;
 }
 
-$folderName = $user_id . '-' . $user['fullname'];
+$folderName = $user_id . '-' . $user['username'];
 $uploadDir = __DIR__ . '/../uploads/' . $folderName . '/';
 
 if (!file_exists($uploadDir)) {
@@ -28,7 +28,9 @@ if (!file_exists($uploadDir)) {
 
 // ตรวจสอบว่าเป็นการแก้ไขไฟล์เดียวหรือไม่
 $singleType = $_POST['single_type'] ?? null;
-$docTypes = $singleType ? [$singleType] : ['pa2', 'info', 'report'];
+
+// ปรับให้รองรับทั้ง 5 ประเภทเอกสาร
+$docTypes = $singleType ? [$singleType] : ['pa1', 'pa2', 'info', 'report', 'other'];
 
 $uploadedCount = 0;
 $errors = [];
@@ -58,18 +60,18 @@ foreach ($docTypes as $type) {
             if (move_uploaded_file($file['tmp_name'], $targetPath)) {
                 $filePath = '/uploads/' . $folderName . '/' . $newFileName;
 
-                // ดึงข้อมูลไฟล์เดิมมาลบไฟล์จริงออกจากเครื่องก่อน
+                // ลบไฟล์เดิมในโฟลเดอร์ (ถ้ามี)
                 $stmtOld = $pdo->prepare("SELECT file_type, file_path_or_link FROM pa_documents WHERE user_id = ? AND doc_type = ?");
                 $stmtOld->execute([$user_id, $type]);
                 $oldDoc = $stmtOld->fetch();
                 if ($oldDoc && $oldDoc['file_type'] === 'file') {
                     $oldPath = __DIR__ . '/..' . $oldDoc['file_path_or_link'];
                     if (file_exists($oldPath)) {
-                        unlink($oldPath);
+                        @unlink($oldPath);
                     }
                 }
 
-                // ลบ Record เดิมออก แล้วเพิ่มข้อมูลใหม่
+                // ลบข้อมูลเดิมในตาราง แล้วบันทึกข้อมูลใหม่
                 $stmtDel = $pdo->prepare("DELETE FROM pa_documents WHERE user_id = ? AND doc_type = ?");
                 $stmtDel->execute([$user_id, $type]);
 
@@ -84,14 +86,14 @@ foreach ($docTypes as $type) {
         $link = trim($_POST["link_{$type}"] ?? '');
         if (!empty($link)) {
             if (filter_var($link, FILTER_VALIDATE_URL)) {
-                // ลบไฟล์เดิมถ้ามี
+                // ลบไฟล์เดิมในโฟลเดอร์ถ้ามี
                 $stmtOld = $pdo->prepare("SELECT file_type, file_path_or_link FROM pa_documents WHERE user_id = ? AND doc_type = ?");
                 $stmtOld->execute([$user_id, $type]);
                 $oldDoc = $stmtOld->fetch();
                 if ($oldDoc && $oldDoc['file_type'] === 'file') {
                     $oldPath = __DIR__ . '/..' . $oldDoc['file_path_or_link'];
                     if (file_exists($oldPath)) {
-                        unlink($oldPath);
+                        @unlink($oldPath);
                     }
                 }
 

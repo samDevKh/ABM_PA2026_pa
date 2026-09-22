@@ -90,7 +90,7 @@ require_once __DIR__ . '/includes/header.php';
 
 <!-- Evaluator Comments -->
 <?php if (count($comments) > 0): ?>
-    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 mt-6">
         <h2 class="text-lg font-bold text-slate-700 flex items-center gap-2">
             <i class="fa-solid fa-comments text-amber-500"></i> คำแนะนำจากผู้ประเมิน
         </h2>
@@ -108,19 +108,35 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 <?php endif; ?>
 
-<!-- Modal 1: อัพโหลดเอกสารรวม (3 รายการ) -->
+<!-- Modal 1: อัพโหลดเอกสารรวม (5 รายการ) -->
 <div id="uploadModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 overflow-y-auto">
     <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl p-6 space-y-5 my-8">
         <div class="flex justify-between items-center border-b pb-3">
             <h2 class="text-lg font-bold text-slate-800">แนบอัพโหลดเอกสารประเมิน PA</h2>
             <button onclick="closeUploadModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
         </div>
-        <form id="uploadForm" enctype="multipart/form-data" class="space-y-6">
-            <!-- 1. PA2 -->
-            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+        <form id="uploadForm" enctype="multipart/form-data" class="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+            
+            <!-- 1. บันทึกข้อตกลงฯ (PA1) -->
+            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                 <div class="flex justify-between items-center">
                     <label class="font-bold text-slate-700 text-sm flex items-center gap-2">
-                        <span class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">1</span> ข้อตกลงในการประเมิน (PA2)
+                        <span class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">1</span> บันทึกข้อตกลงในการพัฒนางาน (PA1)
+                    </label>
+                    <div class="flex gap-3 text-xs">
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_pa1" value="file" checked onclick="toggleType('pa1', 'file')"> ไฟล์</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_pa1" value="link" onclick="toggleType('pa1', 'link')"> ลิงก์</label>
+                    </div>
+                </div>
+                <div id="input_pa1_file"><input type="file" name="file_pa1" accept=".pdf,.png,.jpg,.jpeg" class="w-full border border-slate-300 rounded-lg text-xs p-2 bg-white"></div>
+                <div id="input_pa1_link" class="hidden"><input type="url" name="link_pa1" placeholder="https://..." class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"></div>
+            </div>
+
+            <!-- 2. แบบประเมินฯ (PA2) -->
+            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <div class="flex justify-between items-center">
+                    <label class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                        <span class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">2</span> แบบประเมินผลการพัฒนางาน (PA2)
                     </label>
                     <div class="flex gap-3 text-xs">
                         <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_pa2" value="file" checked onclick="toggleType('pa2', 'file')"> ไฟล์</label>
@@ -131,11 +147,11 @@ require_once __DIR__ . '/includes/header.php';
                 <div id="input_pa2_link" class="hidden"><input type="url" name="link_pa2" placeholder="https://..." class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"></div>
             </div>
 
-            <!-- 2. Info -->
-            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+            <!-- 3. ข้อมูลประกอบ (Infographic) -->
+            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                 <div class="flex justify-between items-center">
                     <label class="font-bold text-slate-700 text-sm flex items-center gap-2">
-                        <span class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">2</span> ข้อมูลประกอบ (Info)
+                        <span class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">3</span> ข้อมูลประกอบ (Infographic)
                     </label>
                     <div class="flex gap-3 text-xs">
                         <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_info" value="file" checked onclick="toggleType('info', 'file')"> ไฟล์</label>
@@ -146,11 +162,11 @@ require_once __DIR__ . '/includes/header.php';
                 <div id="input_info_link" class="hidden"><input type="url" name="link_info" placeholder="https://..." class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"></div>
             </div>
 
-            <!-- 3. Report -->
-            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+            <!-- 4. รายงานผลการปฏิบัติตามข้อตกลง PA -->
+            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                 <div class="flex justify-between items-center">
                     <label class="font-bold text-slate-700 text-sm flex items-center gap-2">
-                        <span class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">3</span> รายงานผลการประเมิน PA (รายงาน PA)
+                        <span class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">4</span> รายงานผลการปฏิบัติตามข้อตกลง PA
                     </label>
                     <div class="flex gap-3 text-xs">
                         <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_report" value="file" checked onclick="toggleType('report', 'file')"> ไฟล์</label>
@@ -159,6 +175,21 @@ require_once __DIR__ . '/includes/header.php';
                 </div>
                 <div id="input_report_file"><input type="file" name="file_report" accept=".pdf,.png,.jpg,.jpeg" class="w-full border border-slate-300 rounded-lg text-xs p-2 bg-white"></div>
                 <div id="input_report_link" class="hidden"><input type="url" name="link_report" placeholder="https://..." class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"></div>
+            </div>
+
+            <!-- 5. เอกสารอื่น ๆ -->
+            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <div class="flex justify-between items-center">
+                    <label class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                        <span class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">5</span> เอกสารอื่น ๆ
+                    </label>
+                    <div class="flex gap-3 text-xs">
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_other" value="file" checked onclick="toggleType('other', 'file')"> ไฟล์</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_other" value="link" onclick="toggleType('other', 'link')"> ลิงก์</label>
+                    </div>
+                </div>
+                <div id="input_other_file"><input type="file" name="file_other" accept=".pdf,.png,.jpg,.jpeg" class="w-full border border-slate-300 rounded-lg text-xs p-2 bg-white"></div>
+                <div id="input_other_link" class="hidden"><input type="url" name="link_other" placeholder="https://..." class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"></div>
             </div>
 
             <p class="text-xs text-slate-400">* หมายเหตุ: รองรับไฟล์ PDF, PNG, JPG ขนาดไม่เกิน 15MB ต่อไฟล์</p>
@@ -184,7 +215,7 @@ require_once __DIR__ . '/includes/header.php';
                 <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="edit_kind" value="link" onclick="toggleEditType('link')"> ลิงก์</label>
             </div>
             <div id="edit_file_group">
-                <label class="block text-xs text-slate-600 mb-1">เลือกไฟล์ใหม่ (PDF, PNG, JPG 不เกิน 15MB)</label>
+                <label class="block text-xs text-slate-600 mb-1">เลือกไฟล์ใหม่ (PDF, PNG, JPG ไม่เกิน 15MB)</label>
                 <input type="file" id="edit_file_input" accept=".pdf,.png,.jpg,.jpeg" class="w-full border border-slate-300 rounded-lg text-xs p-2 bg-white">
             </div>
             <div id="edit_link_group" class="hidden">
@@ -291,7 +322,7 @@ function submitEdit() {
 
     Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-    fetch('/api/upload_doc', { method: 'POST', body: formData })
+    fetch('api/upload_doc.php', { method: 'POST', body: formData })
     .then(res => res.json())
     .then(data => {
         if (data.success) {
@@ -316,7 +347,7 @@ function deleteDoc(docId) {
         cancelButtonText: 'ยกเลิก'
     }).then((result) => {
         if (result.isConfirmed) {
-            fetch('/api/delete_doc.php', {
+            fetch('api/delete_doc.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ doc_id: docId })
@@ -352,10 +383,10 @@ function previewFile(url, type) {
     }
 }
 
-// บันทึกอัปโหลดแบบรวม
+// บันทึกอัปโหลดแบบรวม (ทั้ง 5 รายการ)
 function submitUpload() {
     const formData = new FormData(document.getElementById('uploadForm'));
-    const docTypes = ['pa2', 'info', 'report'];
+    const docTypes = ['pa1', 'pa2', 'info', 'report', 'other'];
     let hasData = false;
     let isValid = true;
 
@@ -389,7 +420,7 @@ function submitUpload() {
 
     Swal.fire({ title: 'กำลังอัพโหลดเอกสาร...', text: 'โปรดรอสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     
-    fetch('/api/upload_doc', { method: 'POST', body: formData })
+    fetch('api/upload_doc.php', { method: 'POST', body: formData })
     .then(res => res.json())
     .then(data => {
         if (data.success) {
