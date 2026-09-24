@@ -9,28 +9,19 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 $message = '';
 $error = '';
 
-
 // 1. จัดการการเพิ่มผู้ประเมินใหม่ (Evaluator)
-// 1. จัดการการเพิ่มผู้ประเมินใหม่ (Evaluator)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_evaluator') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) &&$_POST['action'] === 'add_evaluator') {
     $fullname = trim($_POST['fullname'] ?? '');
     $username = trim($_POST['username'] ?? '');
     $password = trim($_POST['password'] ?? '');
-    $evaluator_num = trim($_POST['evaluator_num'] ?? '');
-    $position = trim($_POST['position'] ?? '');
 
-    if (!empty($fullname) && !empty($username) && !empty($password) && !empty($evaluator_num)) {
-        // เช็คว่า username ซ้ำหรือไม่
-        $stmtChk = $pdo->prepare("SELECT id FROM users WHERE username = ?");
+    if (!empty($fullname) && !empty($username) && !empty($password)) {
+        $stmtChk =$pdo->prepare("SELECT id FROM users WHERE username = ?");
         $stmtChk->execute([$username]);
-        
-        if ($stmtChk->rowCount() > 0) {
-            $_SESSION['flash_error'] = 'ชื่อผู้ใช้นี้ถูกใช้งานแล้ว';
+        if ($stmtChk->rowCount() > 0) {$_SESSION['flash_error'] = 'ชื่อผู้ใช้นี้ถูกใช้งานแล้ว';
         } else {
-            // บันทึกลงคอลัมน์ evaluator_num และ position ที่มีอยู่แล้ว
-            $stmtIns = $pdo->prepare("INSERT INTO users (username, password, fullname, role, evaluator_num, position) VALUES (?, ?, ?, 'evaluator', ?, ?)");
-            if ($stmtIns->execute([$username, $password, $fullname, $evaluator_num, $position])) {
-                $_SESSION['flash_success'] = 'เพิ่มบัญชีผู้ประเมินเรียบร้อยแล้ว';
+            $stmtIns =$pdo->prepare("INSERT INTO users (username, password, fullname, role) VALUES (?, ?, ?, 'evaluator')");
+            if ($stmtIns->execute([$username,$password, $fullname])) {$_SESSION['flash_success'] = 'เพิ่มบัญชีผู้ประเมินเรียบร้อยแล้ว';
             } else {
                 $_SESSION['flash_error'] = 'เกิดข้อผิดพลาดในการบันทึกข้อมูล';
             }
@@ -38,7 +29,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     } else {
         $_SESSION['flash_error'] = 'กรุณากรอกข้อมูลให้ครบถ้วน';
     }
-    
     header('Location: /admin');
     exit;
 }
@@ -59,6 +49,17 @@ $teachersStmt =$pdo->query("
 ");
 $teachers =$teachersStmt->fetchAll();
 
+// ดึงเอกสารของครูทุกคนเก็บใส่ Array โดยจำแนกตาม user_id
+$docStmt =$pdo->query("SELECT * FROM pa_documents ORDER BY created_at DESC");
+$raw_docs = $docStmt->fetchAll();$teacher_docs = [];
+foreach ($raw_docs as$d) {
+    if ($d['file_type'] === 'link') {$teacher_docs[$d['user_id']][] =$d;
+    } else {
+        if (file_exists(__DIR__ . '/' . $d['file_path_or_link'])) {$teacher_docs[$d['user_id']][] =$d;
+        }
+    }
+}
+
 // สรุปสถิติจำนวนครูตามกลุ่มสาระการเรียนรู้สำหรับแสดงใน Chart
 $chartStmt =$pdo->query("
     SELECT sg.name, COUNT(u.id) as total 
@@ -69,9 +70,6 @@ $chartStmt =$pdo->query("
 $chartData =$chartStmt->fetchAll();
 $chartLabels = array_column($chartData, 'name');
 $chartValues = array_column($chartData, 'total');
-
-// ดึงรายชื่อผู้ประเมินทั้งหมด
-$evaluators =$pdo->query("SELECT * FROM users WHERE role = 'evaluator' ORDER BY id DESC")->fetchAll();
 
 $page_title = "ผู้บริหาร / แอดมิน - ระบบประเมิน PA";
 $header_title = "แดชบอร์ดผู้บริหาร / แอดมิน";
@@ -136,86 +134,91 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 
     <!-- Add Evaluator Form (1 Col) -->
-    <!-- Add Evaluator Form -->
     <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-    <h3 class="font-bold text-slate-800 flex items-center gap-2 text-sm border-b pb-3">
-        <i class="fa-solid fa-user-plus text-emerald-600"></i> เพิ่มบัญชีกรรมการประเมิน
-    </h3>
-    <form method="POST" class="space-y-3">
-        <input type="hidden" name="action" value="add_evaluator">
-        
-        <div>
-        <label class="block text-xs font-medium text-slate-700 mb-1">ชื่อ-นามสกุล กรรมการ</label>
-        <input type="text" name="fullname" placeholder="นายจงใจ สอนเด่น" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-        </div>
-
-        <!-- ลิงก์เข้าคอลัมน์ evaluator_num -->
-        <div>
-        <label class="block text-xs font-medium text-slate-700 mb-1">บทบาทในการประเมิน</label>
-        <select name="evaluator_num" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white">
-            <option value="">-- เลือกบทบาท --</option>
-            <option value="1">ประธานกรรมการ (กรรมการคนที่ 1)</option>
-            <option value="2">กรรมการคนที่ 2</option>
-            <option value="3">กรรมการคนที่ 3</option>
-        </select>
-        </div>
-
-        <!-- ลิงก์เข้าคอลัมน์ position -->
-        <div>
-        <label class="block text-xs font-medium text-slate-700 mb-1">ตำแหน่ง / หน่วยงาน</label>
-        <input type="text" name="position" placeholder="เช่น ผู้อำนวยการโรงเรียนสอนดี" class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-        </div>
-
-        <div>
-        <label class="block text-xs font-medium text-slate-700 mb-1">ชื่อผู้ใช้งาน (Username)</label>
-        <input type="text" name="username" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-        </div>
-
-        <div>
-        <label class="block text-xs font-medium text-slate-700 mb-1">รหัสผ่าน (Password)</label>
-        <input type="password" name="password" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-        </div>
-
-        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium py-2.5 rounded-lg transition">
-        + เพิ่มผู้ประเมิน
-        </button>
-    </form>
+        <h3 class="font-bold text-slate-800 flex items-center gap-2 text-sm border-b pb-3">
+            <i class="fa-solid fa-user-plus text-emerald-600"></i> เพิ่มบัญชีกรรมการประเมิน
+        </h3>
+        <form method="POST" class="space-y-3">
+            <input type="hidden" name="action" value="add_evaluator">
+            <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1">ชื่อ-นามสกุล กรรมการ</label>
+                <input type="text" name="fullname" placeholder="นายวิชัย ใฝ่เรียนรู้" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1">ชื่อผู้ใช้งาน (Username)</label>
+                <input type="text" name="username" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1">รหัสผ่าน (Password)</label>
+                <input type="password" name="password" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            </div>
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium py-2.5 rounded-lg transition">
+                + เพิ่มผู้ประเมิน
+            </button>
+        </form>
     </div>
 
 </div>
 
-<!-- PA3 Summary List Table -->
+<!-- PA3 Summary & Document List Table -->
 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mt-6">
     <div class="p-5 border-b border-slate-100 font-bold text-slate-800 flex justify-between items-center">
-        <span><i class="fa-solid fa-file-signature text-indigo-600 mr-2"></i> ติดตามและสรุปผลการประเมิน PA3 รายบุคคล</span>
+        <span><i class="fa-solid fa-file-signature text-indigo-600 mr-2"></i> ติดตามการประเมินและเอกสารครูรายบุคคล</span>
     </div>
     <div class="overflow-x-auto">
         <table class="w-full text-left text-sm">
             <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
                 <tr>
-                    <th class="p-3.5">ชื่อ-นามสกุล / วิทยฐานะ</th>
-                    <th class="p-3.5">กลุ่มสาระการเรียนรู้</th>
+                    <th class="p-3.5 w-1/4">ชื่อ-นามสกุล / วิทยฐานะ</th>
+                    <th class="p-3.5 w-1/6">กลุ่มสาระการเรียนรู้</th>
+                    <th class="p-3.5 w-1/3">เอกสารที่อัปโหลด</th>
                     <th class="p-3.5 text-center">สถานะการประเมิน</th>
-                    <th class="p-3.5 text-center">พิมพ์เอกสาร</th>
+                    <th class="p-3.5 text-center">รายงาน</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
                 <?php if (count($teachers) === 0): ?>
-                    <tr><td colspan="4" class="p-6 text-center text-slate-400">ยังไม่มีข้อมูลครูในระบบ</td></tr>
+                    <tr><td colspan="5" class="p-6 text-center text-slate-400">ยังไม่มีข้อมูลครูในระบบ</td></tr>
                 <?php else: ?>
                     <?php foreach ($teachers as$t): ?>
+                        <?php 
+                            $docs = $teacher_docs[$t['id']] ?? []; 
+                        ?>
                         <tr class="hover:bg-slate-50/80 transition">
-                            <td class="p-3.5 font-medium text-slate-800">
+                            <!-- ครู / วิทยฐานะ -->
+                            <td class="p-3.5 font-medium text-slate-800 align-top">
                                 <?= htmlspecialchars($t['fullname']) ?>
                                 <span class="block text-xs text-amber-700 font-normal mt-0.5">
                                     <i class="fa-solid fa-award mr-1"></i> <?= htmlspecialchars($t['academic_standing'] ?: 'ครู (ยังไม่มีวิทยฐานะ)') ?>
                                 </span>
                             </td>
-                            <td class="p-3.5 text-slate-600"><?= htmlspecialchars($t['group_name'] ?: 'ยังไม่ระบุ') ?></td>
-                            <td class="p-3.5 text-center">
+
+                            <!-- กลุ่มสาระ -->
+                            <td class="p-3.5 text-slate-600 align-top"><?= htmlspecialchars($t['group_name'] ?: 'ยังไม่ระบุ') ?></td>
+
+                            <!-- รายการเอกสารครู + ปุ่มดูเอกสาร -->
+                            <td class="p-3.5 align-top">
+                                <?php if (count($docs) === 0): ?>
+                                    <span class="text-xs text-slate-400 italic">ยังไม่มีเอกสาร</span>
+                                <?php else: ?>
+                                    <div class="flex flex-wrap gap-1.5">
+                                        <?php foreach ($docs as$d): ?>
+                                            <button onclick="previewFile('<?= htmlspecialchars($d['file_path_or_link']) ?>', '<?=$d['file_type'] ?>')" 
+                                                    class="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 text-xs px-2.5 py-1 rounded-lg border border-slate-200 transition">
+                                                <i class="fa-solid <?= $d['file_type'] === 'link' ? 'fa-link text-indigo-500' : 'fa-file-lines text-slate-500' ?>"></i>
+                                                <span class="font-semibold uppercase text-[10px] text-indigo-600">[<?= $d['doc_type'] ?>]</span>
+                                                <span class="truncate max-w-[120px]"><?= htmlspecialchars($d['original_name'] ?:$d['file_path_or_link']) ?></span>
+                                            </button>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </td>
+
+                            <!-- สถานะการประเมิน -->
+                            <td class="p-3.5 text-center align-top">
                                 <?php if ($t['eval_count'] >= 3): ?>
                                     <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full inline-flex items-center gap-1">
-                                        <i class="fa-solid fa-circle-check"></i> ประเมินครบ 3 ท่านแล้ว
+                                        <i class="fa-solid fa-circle-check"></i> ประเมินครบ 3 ท่าน
                                     </span>
                                 <?php else: ?>
                                     <span class="bg-amber-100 text-amber-800 text-xs font-medium px-3 py-1 rounded-full inline-flex items-center gap-1">
@@ -223,8 +226,10 @@ require_once __DIR__ . '/includes/header.php';
                                     </span>
                                 <?php endif; ?>
                             </td>
-                            <td class="p-3.5 text-center">
-                                <button onclick="viewPA3Summary(<?= $t['id'] ?>)" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3.5 py-1.5 rounded-xl font-medium transition flex items-center gap-1.5 mx-auto">
+
+                            <!-- ปุ่มพิมพ์สรุป PA3 -->
+                            <td class="p-3.5 text-center align-top">
+                                <button onclick="viewPA3Summary(<?= $t['id'] ?>)" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 rounded-xl font-medium transition flex items-center gap-1.5 mx-auto">
                                     <i class="fa-solid fa-file-contract"></i> แบบสรุป PA3
                                 </button>
                             </td>
@@ -237,7 +242,7 @@ require_once __DIR__ . '/includes/header.php';
 </div>
 
 <!-- Modal สรุปผล PA3 (PA3 Summary View & Print Modal) -->
-<div id="pa3Modal" class="fixed inset-0 bg-black/60 hidden items-start mt-8 justify-center z-50 p-4 overflow-y-auto">
+<div id="pa3Modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-4 overflow-y-auto">
     <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl p-8 space-y-6 my-8 print:m-0 print:p-0 print:shadow-none print:w-full">
         
         <!-- Header (Non-Print Buttons) -->
@@ -297,33 +302,36 @@ require_once __DIR__ . '/includes/header.php';
             </div>
 
             <!-- เซ็นชื่อกรรมการ 3 ท่าน -->
-             <div class="pt-8 space-y-8 text-center text-xs">
-                <!-- แถวบน: ประธานกรรมการ (อยู่ตรงกลาง) -->
-                <div class="flex justify-center">
-                    <div class="w-1/3 space-y-8">
-                        <p>(ลงชื่อ).....................................................</p>
-                        <p class="font-medium" id="pa3Sign1">( ประธานกรรมการ )</p>
-                        <p class="text-slate-500">วันที่ ........ เดือน .................... พ.ศ. ......</p>
-                    </div>
+            <div class="pt-8 grid grid-cols-3 gap-4 text-center text-xs space-y-0">
+                <div class="space-y-8">
+                    <p>(ลงชื่อ).....................................................</p>
+                    <p class="font-medium" id="pa3Sign1">( ประธานกรรมการผู้ประเมิน )</p>
+                    <p class="text-slate-500">วันที่ ........ เดือน .................... พ.ศ. ......</p>
                 </div>
-
-                <!-- แถวล่าง: กรรมการอีก 2 คน (แบ่งคนละฝั่ง) -->
-                <div class="grid grid-cols-2 gap-8">
-                    <div class="space-y-8">
-                        <p>(ลงชื่อ).....................................................</p>
-                        <p class="font-medium" id="pa3Sign2">( กรรมการ )</p>
-                        <p class="text-slate-500">วันที่ ........ เดือน .................... พ.ศ. ......</p>
-                    </div>
-                    <div class="space-y-8">
-                        <p>(ลงชื่อ).....................................................</p>
-                        <p class="font-medium" id="pa3Sign3">( กรรมการ )</p>
-                        <p class="text-slate-500">วันที่ ........ เดือน .................... พ.ศ. ......</p>
-                    </div>
+                <div class="space-y-8">
+                    <p>(ลงชื่อ).....................................................</p>
+                    <p class="font-medium" id="pa3Sign2">( กรรมการผู้ประเมิน )</p>
+                    <p class="text-slate-500">วันที่ ........ เดือน .................... พ.ศ. ......</p>
+                </div>
+                <div class="space-y-8">
+                    <p>(ลงชื่อ).....................................................</p>
+                    <p class="font-medium" id="pa3Sign3">( กรรมการผู้ประเมิน )</p>
+                    <p class="text-slate-500">วันที่ ........ เดือน .................... พ.ศ. ......</p>
                 </div>
             </div>
 
-
         </div>
+    </div>
+</div>
+
+<!-- Modal: Preview File (สำหรับดู PDF / รูปภาพ / ลิงก์) -->
+<div id="previewModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-4 print:hidden">
+    <div class="bg-white w-full max-w-5xl h-[85vh] rounded-2xl shadow-xl p-4 flex flex-col">
+        <div class="flex justify-between items-center mb-3 border-b pb-2">
+            <h3 class="font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-file-lines text-indigo-600"></i> ตัวอย่างเอกสาร</h3>
+            <button onclick="closePreviewModal()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
+        </div>
+        <div id="previewContainer" class="flex-1 border border-slate-200 rounded-xl bg-slate-100 overflow-hidden relative"></div>
     </div>
 </div>
 
@@ -357,7 +365,7 @@ new Chart(ctx, {
 // 2. เรียกดูสรุปผล PA3 รายบุคคล
 function viewPA3Summary(teacherId) {
     Swal.fire({ title: 'กำลังโหลดข้อมูล PA3...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-    
+
     fetch(`api/get_pa3_summary.php?teacher_id=${teacherId}`)
     .then(res => res.json())
     .then(data => {
@@ -369,55 +377,53 @@ function viewPA3Summary(teacherId) {
 
             const evs = data.evaluators;
             const tbody = document.getElementById('pa3TableBody');
-
-            // ตรวจสอบความปลอดภัยของ Index 0, 1, 2
-            const ev1 = evs[0] || { sec1: '-', sec2: '-', total: '-', name: 'กรรมการคนที่ 1' };
-            const ev2 = evs[1] || { sec1: '-', sec2: '-', total: '-', name: 'กรรมการคนที่ 2' };
-            const ev3 = evs[2] || { sec1: '-', sec2: '-', total: '-', name: 'กรรมการคนที่ 3' };
-
             tbody.innerHTML = `
                 <tr>
                     <td class="p-2.5 border border-slate-300 text-left">ส่วนที่ 1 ข้อตกลงในการพัฒนางานตามมาตรฐานตำแหน่ง</td>
                     <td class="p-2.5 border border-slate-300 font-bold">60</td>
-                    <td class="p-2.5 border border-slate-300">${ev1.sec1}</td>
-                    <td class="p-2.5 border border-slate-300">${ev2.sec1}</td>
-                    <td class="p-2.5 border border-slate-300">${ev3.sec1}</td>
+                    <td class="p-2.5 border border-slate-300">${evs[0].sec1}</td>
+                    <td class="p-2.5 border border-slate-300">${evs[1].sec1}</td>
+                    <td class="p-2.5 border border-slate-300">${evs[2].sec1}</td>
                 </tr>
                 <tr>
                     <td class="p-2.5 border border-slate-300 text-left">ส่วนที่ 2 ข้อตกลงในการพัฒนางาน ที่เสนอเป็นประเด็นท้าทายฯ</td>
                     <td class="p-2.5 border border-slate-300 font-bold">40</td>
-                    <td class="p-2.5 border border-slate-300">${ev1.sec2}</td>
-                    <td class="p-2.5 border border-slate-300">${ev2.sec2}</td>
-                    <td class="p-2.5 border border-slate-300">${ev3.sec2}</td>
+                    <td class="p-2.5 border border-slate-300">${evs[0].sec2}</td>
+                    <td class="p-2.5 border border-slate-300">${evs[1].sec2}</td>
+                    <td class="p-2.5 border border-slate-300">${evs[2].sec2}</td>
                 </tr>
                 <tr class="bg-slate-50 font-bold">
                     <td class="p-2.5 border border-slate-300 text-left">รวมคะแนนทั้งหมด</td>
                     <td class="p-2.5 border border-slate-300">100</td>
-                    <td class="p-2.5 border border-slate-300 text-indigo-700">${ev1.total}</td>
-                    <td class="p-2.5 border border-slate-300 text-indigo-700">${ev2.total}</td>
-                    <td class="p-2.5 border border-slate-300 text-indigo-700">${ev3.total}</td>
+                    <td class="p-2.5 border border-slate-300 text-indigo-700">${evs[0].total}</td>
+                    <td class="p-2.5 border border-slate-300 text-indigo-700">${evs[1].total}</td>
+                    <td class="p-2.5 border border-slate-300 text-indigo-700">${evs[2].total}</td>
                 </tr>
             `;
 
-            // ใส่ชื่อกรรมการเซ็นชื่อ
-            document.getElementById('pa3Sign1').innerText = `(${ev1.name})`;
-            document.getElementById('pa3Sign2').innerText = `(${ev2.name})`;
-            document.getElementById('pa3Sign3').innerText = `(${ev3.name})`;
-
-            // แสดงสถานะผ่าน/ไม่ผ่าน
             const box = document.getElementById('pa3ResultBox');
             const checks = document.getElementById('pa3StatusCheckboxes');
             
             if (data.completed_count < 3) {
                 box.className = "p-4 rounded-xl border border-amber-200 bg-amber-50 text-xs space-y-2";
-                checks.innerHTML = `<span class="text-amber-800 font-bold">ยังประเมินไม่ครบทั้ง 3 ท่าน (ประเมินแล้ว ${data.completed_count}/3 ท่าน)</span>`;
+                checks.innerHTML = `<span class="text-amber-800 font-bold">⚠️ ยังประเมินไม่ครบทั้ง 3 ท่าน (ประเมินแล้ว ${data.completed_count}/3 ท่าน)</span>`;
             } else if (data.is_all_pass) {
                 box.className = "p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-xs space-y-2";
-                checks.innerHTML = `<span class="font-bold text-emerald-800 text-sm"> [✓] ผ่านเกณฑ์</span> <span class="text-slate-400 text-sm ml-4">[ ] ไม่ผ่านเกณฑ์</span>`;
+                checks.innerHTML = `
+                    <span class="font-bold text-emerald-800 text-sm">☑ ผ่านเกณฑ์</span>
+                    <span class="text-slate-400 text-sm">☐ ไม่ผ่านเกณฑ์</span>
+                `;
             } else {
                 box.className = "p-4 rounded-xl border border-rose-200 bg-rose-50 text-xs space-y-2";
-                checks.innerHTML = `<span class="text-slate-400 text-sm">[ ] ผ่านเกณฑ์</span> <span class="font-bold text-rose-800 text-sm ml-4">[✓] ไม่ผ่านเกณฑ์</span>`;
+                checks.innerHTML = `
+                    <span class="text-slate-400 text-sm">☐ ผ่านเกณฑ์</span>
+                    <span class="font-bold text-rose-800 text-sm">☑ ไม่ผ่านเกณฑ์</span>
+                `;
             }
+
+            document.getElementById('pa3Sign1').innerText = `( ${evs[0].name} )`;
+            document.getElementById('pa3Sign2').innerText = `( ${evs[1].name} )`;
+            document.getElementById('pa3Sign3').innerText = `( ${evs[2].name} )`;
 
             const modal = document.getElementById('pa3Modal');
             modal.classList.remove('hidden');
@@ -432,6 +438,28 @@ function closePA3Modal() {
     const modal = document.getElementById('pa3Modal');
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+}
+
+// 3. ฟังก์ชันเปิดพรีวิวไฟล์สำหรับแอดมิน
+function previewFile(url, type) {
+    const container = document.getElementById('previewContainer');
+    if (!container) return;
+    if (type === 'link') { window.open(url, '_blank'); return; }
+    const ext = url.split('.').pop().toLowerCase();
+    if (ext === 'pdf') {
+        container.innerHTML = `<iframe src="${url}" class="w-full h-full border-0"></iframe>`;
+    } else {
+        container.innerHTML = `<div class="w-full h-full flex items-center justify-center p-4 bg-slate-900/10"><img src="${url}" class="max-h-full max-w-full object-contain rounded-lg"></div>`;
+    }
+    const previewModal = document.getElementById('previewModal');
+    previewModal.classList.remove('hidden');
+    previewModal.classList.add('flex');
+}
+
+function closePreviewModal() {
+    const previewModal = document.getElementById('previewModal');
+    previewModal.classList.add('hidden');
+    previewModal.classList.remove('flex');
 }
 </script>
 
