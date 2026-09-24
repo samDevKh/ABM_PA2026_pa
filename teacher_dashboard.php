@@ -1,33 +1,29 @@
 <?php
 require_once __DIR__ . '/config/database.php';
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
+if (!isset($_SESSION['user_id']) ||$_SESSION['role'] !== 'teacher') {
     header('Location: /login');
     exit;
 }
 
-$user_id = $_SESSION['user_id'];
+$user_id =$_SESSION['user_id'];
 
 // ดึงรายการเอกสารทั้งหมดของครูท่านนี้ (ทั้งที่เป็นไฟล์และลิงก์)[cite: 1, 2]
-$stmt = $pdo->prepare("SELECT * FROM pa_documents WHERE user_id = ? ORDER BY created_at DESC");
-$stmt->execute([$user_id]);
-$raw_documents = $stmt->fetchAll();
-$documents = [];
+$stmt =$pdo->prepare("SELECT * FROM pa_documents WHERE user_id = ? ORDER BY created_at DESC");
+$stmt->execute([$user_id]);$raw_documents = $stmt->fetchAll();$documents = [];
 
-foreach ($raw_documents as $doc) {
+foreach ($raw_documents as$doc) {
     if ($doc['file_type'] === 'link') {
-        // หากเป็นลิงก์ ให้นำมาแสดงผลได้ทันที[cite: 2]
-        $documents[] = $doc;
+        $documents[] =$doc;
     } else {
-        // หากเป็นไฟล์ ให้เช็กว่าไฟล์จริงยังคงอยู่ในเซิร์ฟเวอร์[cite: 2]
-        $realPath = __DIR__ . $doc['file_path_or_link'];
+        $realPath = __DIR__ .$doc['file_path_or_link'];
         if (file_exists($realPath)) {
-            $documents[] = $doc;
+            $documents[] =$doc;
         }
     }
 }
 
 // ดึงข้อเสนอแนะจากผู้ประเมิน[cite: 2]
-$stmt_comment = $pdo->prepare("
+$stmt_comment =$pdo->prepare("
     SELECT e.*, u.fullname as evaluator_name
     FROM evaluations e
     JOIN users u ON e.evaluator_id = u.id
@@ -35,14 +31,21 @@ $stmt_comment = $pdo->prepare("
     ORDER BY e.created_at DESC
 ");
 $stmt_comment->execute([$user_id]);
-$comments = $stmt_comment->fetchAll();
+$comments =$stmt_comment->fetchAll();
 
 $page_title = "ส่วนของคุณครู - ระบบประเมิน PA";
 $header_title = "ระบบอัพโหลดเอกสาร PA";
+
+// วางปุ่ม "ส่งข้อสอบ" ด้านขวาของปุ่ม "แนบไฟล์ / แนบลิงก์เอกสาร"
 $extra_nav_button = '
-<button onclick="openUploadModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center gap-2">
-    <i class="fa-solid fa-cloud-arrow-up"></i> แนบไฟล์ / แนบลิงก์เอกสาร
-</button>';
+<div class="flex items-center gap-2">
+    <button onclick="openUploadModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center gap-2">
+        <i class="fa-solid fa-cloud-arrow-up"></i> แนบไฟล์ / แนบลิงก์เอกสาร
+    </button>
+    <button onclick="openExamModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center gap-2">
+        <i class="fa-solid fa-file-circle-check"></i> ส่งข้อสอบ
+    </button>
+</div>';
 require_once __DIR__ . '/includes/header.php';
 ?>
 
@@ -59,15 +62,14 @@ require_once __DIR__ . '/includes/header.php';
         <?php if (count($documents) === 0): ?>
             <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-slate-200 text-slate-400 space-y-3">
                 <i class="fa-solid fa-folder-open text-4xl text-slate-300"></i>
-                <p>ยังไม่มีเอกสารที่อัพโหลด กดปุ่ม "แนบไฟล์ / แนบลิงก์เอกสาร" ด้านบนเพื่อเริ่มต้น</p>
+                <p>ยังไม่มีเอกสารที่อัพโหลด กดปุ่มด้านบนเพื่อเริ่มต้น</p>
             </div>
         <?php else: ?>
-            <?php foreach ($documents as $doc): ?>
+            <?php foreach ($documents as$doc): ?>
                 <?php $isLink = ($doc['file_type'] === 'link'); ?>
                 <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition space-y-3 flex flex-col justify-between">
                     
                     <div class="space-y-3">
-                        <!-- Card Header: ประเภทเอกสาร + Badge ชนิด (ไฟล์/ลิงก์) -->
                         <div class="flex justify-between items-start gap-2">
                             <span class="bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-full uppercase border border-indigo-100">
                                 <?php
@@ -78,13 +80,13 @@ require_once __DIR__ . '/includes/header.php';
                                     'info' => '4. รายงาน (Infographic)',
                                     'report' => '5. รายงานผลการปฏิบัติงานตามข้อตกลง (≤20หน้า)',
                                     'salary' => '6. รายงานผลการปฏิบัติงานเพื่อเลื่อนเงินเดือน',
-                                    'other' => '7. อื่น ๆ'
+                                    'other' => '7. อื่น ๆ',
+                                    'exam' => 'เอกสารข้อสอบ'
                                 ];
                                 echo htmlspecialchars($docTypeLabel[$doc['doc_type']] ?? $doc['doc_type']);
                                 ?>
                             </span>
 
-                            <!-- แยกสัญลักษณ์ประเภท: ลิงก์ vs ไฟล์[cite: 2] -->
                             <?php if ($isLink): ?>
                                 <span class="bg-sky-50 text-sky-600 border border-sky-200 text-[11px] font-medium px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
                                     <i class="fa-solid fa-link"></i> ลิงก์ภายนอก
@@ -96,14 +98,12 @@ require_once __DIR__ . '/includes/header.php';
                             <?php endif; ?>
                         </div>
 
-                        <!-- แสดงชื่อไฟล์ หรือ แสดง URL ลิงก์[cite: 2] -->
                         <div>
-                            <h3 class="font-semibold text-slate-800 text-sm truncate" title="<?= htmlspecialchars($doc['original_name'] ?: $doc['file_path_or_link']) ?>">
-                                <?= htmlspecialchars($doc['original_name'] ?: $doc['file_path_or_link']) ?>
+                            <h3 class="font-semibold text-slate-800 text-sm truncate" title="<?= htmlspecialchars($doc['original_name'] ?:$doc['file_path_or_link']) ?>">
+                                <?= htmlspecialchars($doc['original_name'] ?:$doc['file_path_or_link']) ?>
                             </h3>
                             
                             <?php if ($isLink): ?>
-                                <!-- แสดง URL ของลิงก์ที่แนบมา[cite: 2] -->
                                 <a href="<?= htmlspecialchars($doc['file_path_or_link']) ?>" target="_blank" class="text-xs text-sky-600 hover:underline truncate block mt-1 flex items-center gap-1">
                                     <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> <?= htmlspecialchars($doc['file_path_or_link']) ?>
                                 </a>
@@ -111,13 +111,11 @@ require_once __DIR__ . '/includes/header.php';
                         </div>
                     </div>
 
-                    <!-- Card Footer: วันที่ + ปุ่มจัดการต่างๆ -->
                     <div class="pt-3 border-t border-slate-100 space-y-2">
                         <p class="text-[11px] text-slate-400">วันที่อัพโหลด: <?= date('d/m/Y H:i', strtotime($doc['created_at'])) ?></p>
 
                         <div class="flex items-center justify-between text-xs font-medium pt-1">
-                            <!-- ปุ่ม เปิดดู/เปิดลิงก์[cite: 2] -->
-                            <button onclick="previewFile('<?= htmlspecialchars($doc['file_path_or_link']) ?>', '<?= $doc['file_type'] ?>')" class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg transition flex items-center gap-1">
+                            <button onclick="previewFile('<?= htmlspecialchars($doc['file_path_or_link']) ?>', '<?=$doc['file_type'] ?>')" class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg transition flex items-center gap-1">
                                 <?php if ($isLink): ?>
                                     <i class="fa-solid fa-arrow-up-right-from-square"></i> เปิดลิงก์
                                 <?php else: ?>
@@ -125,11 +123,12 @@ require_once __DIR__ . '/includes/header.php';
                                 <?php endif; ?>
                             </button>
 
-                            <!-- ปุ่ม แก้ไข / ลบ[cite: 2] -->
                             <div class="flex items-center gap-2">
-                                <button onclick="openEditModal('<?= $doc['doc_type'] ?>')" class="text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-lg transition flex items-center gap-1">
-                                    <i class="fa-solid fa-pen-to-square"></i> แก้ไข
-                                </button>
+                                <?php if ($doc['doc_type'] !== 'exam'): ?>
+                                    <button onclick="openEditModal('<?= $doc['doc_type'] ?>')" class="text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-lg transition flex items-center gap-1">
+                                        <i class="fa-solid fa-pen-to-square"></i> แก้ไข
+                                    </button>
+                                <?php endif; ?>
                                 <button onclick="deleteDoc(<?= $doc['id'] ?>)" class="text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 px-2 py-1.5 rounded-lg transition flex items-center gap-1" title="ลบเอกสาร">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
@@ -143,27 +142,42 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 </div>
 
-<!-- Evaluator Comments -->
-<?php if (count($comments) > 0): ?>
-    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 mt-8">
-        <h2 class="text-lg font-bold text-slate-700 flex items-center gap-2">
-            <i class="fa-solid fa-comments text-amber-500"></i> คำแนะนำจากผู้ประเมิน
-        </h2>
-        <div class="space-y-3">
-            <?php foreach ($comments as$c): ?>
-                <div class="bg-amber-50/50 p-4 rounded-xl border border-amber-200/60">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="font-semibold text-slate-800 text-sm"><?= htmlspecialchars($c['evaluator_name']) ?></span>
-                        <span class="text-xs text-slate-400"><?= date('d/m/Y H:i', strtotime($c['created_at'])) ?></span>
-                    </div>
-                    <p class="text-slate-600 text-sm leading-relaxed"><?= nl2br(htmlspecialchars($c['comments'])) ?></p>
-                </div>
-            <?php endforeach; ?>
+<!-- Modal: ส่งข้อสอบ (เพิ่มช่องแนบไฟล์ได้ไม่เกิน 5 ช่อง) -->
+<div id="examModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl p-6 space-y-5 my-8">
+        <div class="flex justify-between items-center border-b pb-3">
+            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-file-circle-check text-emerald-600"></i> ส่งข้อสอบ
+            </h2>
+            <button onclick="closeExamModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
         </div>
-    </div>
-<?php endif; ?>
+        
+        <form id="examForm" enctype="multipart/form-data" class="space-y-4">
+            <div id="examInputsContainer" class="space-y-3">
+                <!-- ช่องแนบไฟล์ที่ 1 (เริ่มต้น) -->
+                <div class="exam-input-item p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                    <label class="block text-xs font-bold text-slate-700">ไฟล์ข้อสอบที่ 1</label>
+                    <input type="file" name="exam_files[]" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" class="w-full border border-slate-300 rounded-lg text-xs p-2 bg-white" required>
+                </div>
+            </div>
 
-<!-- Modal 1: อัพโหลดเอกสารรวม (7 รายการ) -->
+            <!-- ปุ่มเพิ่มช่องแนบไฟล์ -->
+            <div class="flex justify-between items-center pt-2">
+                <button type="button" id="btnAddExamInput" onclick="addExamInput()" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-3 py-2 rounded-lg border border-emerald-200 transition flex items-center gap-1">
+                    <i class="fa-solid fa-plus"></i> เพิ่มช่องแนบไฟล์ (<span id="examFileCountText">1</span>/5)
+                </button>
+                <span class="text-[11px] text-slate-400">* แนบไฟล์ได้สูงสุด 5 ไฟล์</span>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-3 border-t">
+                <button type="button" onclick="closeExamModal()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">ยกเลิก</button>
+                <button type="button" onclick="submitExam()" class="px-5 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium">บันทึกส่งข้อสอบ</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal 1: อัพโหลดเอกสาร PA รวม (7 รายการ) -->
 <div id="uploadModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 overflow-y-auto">
     <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl p-6 space-y-5 my-8">
         <div class="flex justify-between items-center border-b pb-3">
@@ -247,7 +261,7 @@ require_once __DIR__ . '/includes/header.php';
                 <div id="input_report_link" class="hidden"><input type="url" name="link_report" placeholder="https://..." class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"></div>
             </div>
 
-            <!-- 6. รายงานผลการปฏิบัติงานเพื่อประกอบการพิจารณาเลื่อนเงินเดือน (เพิ่มใหม่) -->
+            <!-- 6. รายงานผลการปฏิบัติงานเพื่อประกอบการพิจารณาเลื่อนเงินเดือน -->
             <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                 <div class="flex justify-between items-center">
                     <label class="font-bold text-slate-700 text-sm flex items-center gap-2">
@@ -277,7 +291,6 @@ require_once __DIR__ . '/includes/header.php';
                 <div id="input_other_link" class="hidden"><input type="url" name="link_other" placeholder="https://..." class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"></div>
             </div>
 
-            <p class="text-xs text-slate-400">* หมายเหตุ: รองรับไฟล์ PDF, PNG, JPG ขนาดไม่เกิน 15MB ต่อไฟล์</p>
             <div class="flex justify-end gap-2 pt-2 border-t">
                 <button type="button" onclick="closeUploadModal()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">ยกเลิก</button>
                 <button type="button" onclick="submitUpload()" class="px-5 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">บันทึกอัพโหลด</button>
@@ -286,36 +299,7 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 </div>
 
-<!-- Modal 2: แก้ไขเอกสารรายรายการ[cite: 2] -->
-<div id="editModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl p-6 space-y-4">
-        <div class="flex justify-between items-center border-b pb-3">
-            <h3 class="font-bold text-slate-800" id="editModalTitle">แก้ไขเอกสาร</h3>
-            <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
-        </div>
-        <form id="editForm" enctype="multipart/form-data" class="space-y-4">
-            <input type="hidden" name="single_type" id="edit_single_type">
-            <div class="flex gap-4 text-xs">
-                <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="edit_kind" value="file" checked onclick="toggleEditType('file')"> ไฟล์</label>
-                <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="edit_kind" value="link" onclick="toggleEditType('link')"> ลิงก์</label>
-            </div>
-            <div id="edit_file_group">
-                <label class="block text-xs text-slate-600 mb-1">เลือกไฟล์ใหม่ (PDF, PNG, JPG ไม่เกิน 15MB)</label>
-                <input type="file" id="edit_file_input" accept=".pdf,.png,.jpg,.jpeg" class="w-full border border-slate-300 rounded-lg text-xs p-2 bg-white">
-            </div>
-            <div id="edit_link_group" class="hidden">
-                <label class="block text-xs text-slate-600 mb-1">URL ลิงก์เอกสารใหม่</label>
-                <input type="url" id="edit_link_input" placeholder="https://..." class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white">
-            </div>
-            <div class="flex justify-end gap-2 pt-3 border-t">
-                <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">ยกเลิก</button>
-                <button type="button" onclick="submitEdit()" class="px-5 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">บันทึกแก้ไข</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Modal 3: ดูตัวอย่างเอกสาร[cite: 2] -->
+<!-- Modal: ดูตัวอย่างเอกสาร -->
 <div id="previewModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-4">
     <div class="bg-white w-full max-w-4xl h-[85vh] rounded-2xl shadow-xl p-4 flex flex-col">
         <div class="flex justify-between items-center mb-3">
@@ -331,6 +315,84 @@ require_once __DIR__ . '/includes/header.php';
 </div>
 
 <script>
+// --- ส่วนควบคุม Modal ส่งข้อสอบ (ไม่เกิน 5 ช่อง) ---
+let examInputCount = 1;
+
+function openExamModal() {
+    const modal = document.getElementById('examModal');
+    if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+}
+
+function closeExamModal() {
+    const modal = document.getElementById('examModal');
+    if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+}
+
+function addExamInput() {
+    if (examInputCount >= 5) {
+        Swal.fire({ icon: 'warning', title: 'ถึงขีดจำกัด', text: 'สามารถเพิ่มช่องแนบไฟล์ได้สูงสุด 5 ช่องเท่านั้น' });
+        return;
+    }
+    
+    examInputCount++;
+    const container = document.getElementById('examInputsContainer');
+    const div = document.createElement('div');
+    div.className = 'exam-input-item p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1 relative';
+    div.id = `exam_item_${examInputCount}`;
+    div.innerHTML = `
+        <div class="flex justify-between items-center">
+            <label class="block text-xs font-bold text-slate-700">ไฟล์ข้อสอบที่ ${examInputCount}</label>
+            <button type="button" onclick="removeExamInput(${examInputCount})" class="text-rose-500 hover:text-rose-700 text-xs font-semibold">
+                <i class="fa-solid fa-trash-can"></i> ลบ
+            </button>
+        </div>
+        <input type="file" name="exam_files[]" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" class="w-full border border-slate-300 rounded-lg text-xs p-2 bg-white" required>
+    `;
+    container.appendChild(div);
+    document.getElementById('examFileCountText').innerText = examInputCount;
+}
+
+function removeExamInput(id) {
+    const item = document.getElementById(`exam_item_${id}`);
+    if (item) {
+        item.remove();
+        examInputCount--;
+        document.getElementById('examFileCountText').innerText = examInputCount;
+    }
+}
+
+function submitExam() {
+    const form = document.getElementById('examForm');
+    const formData = new FormData(form);
+    const fileInputs = form.querySelectorAll('input[type="file"]');
+    
+    let hasFile = false;
+    fileInputs.forEach(input => {
+        if (input.files.length > 0) hasFile = true;
+    });
+
+    if (!hasFile) {
+        Swal.fire({ icon: 'warning', title: 'กรุณาเลือกไฟล์ข้อสอบอย่างน้อย 1 ไฟล์' });
+        return;
+    }
+
+    Swal.fire({ title: 'กำลังอัพโหลดข้อสอบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    
+    fetch('api/upload_exam.php', { method: 'POST', body: formData })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            closeExamModal();
+            Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: data.message })
+            .then(() => location.reload());
+        } else {
+            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: data.message });
+        }
+    })
+    .catch(() => Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาดในการเชื่อมต่อ' }));
+}
+
+// --- ส่วนเดิมสำหรับควบคุมอัปโหลดเอกสาร PA ---
 function openUploadModal() {
     const modal = document.getElementById('uploadModal');
     if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
@@ -355,78 +417,28 @@ function toggleType(dockey, type) {
     }
 }
 
-// เปิด Modal แก้ไขเฉพาะเอกสาร
-function openEditModal(docType) {
-    document.getElementById('edit_single_type').value = docType;
-    const docTypeLabel = {
-        'pa1': '1. แบบบันทึกข้อตกลงในการพัฒนางาน (PA1)',
-        'pa2': '2. แบบประเมินผลการปฏิบัติงาน (PA2)',
-        'pa3': '3. สรุปผลการประเมิน (PA3)',
-        'info': '4. รายงาน (Infographic)',
-        'report': '5. รายงานผลการปฏิบัติงานตามข้อตกลง (≤20หน้า)',
-        'salary': '6. รายงานผลการปฏิบัติงานเพื่อเลื่อนเงินเดือน',
-        'other': '7. อื่น ๆ'
-    };
-    document.getElementById('editModalTitle').innerText = 'แก้ไขเอกสาร ' + (docTypeLabel[docType] || docType.toUpperCase());
-    const modal = document.getElementById('editModal');
-    if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
-}
-function closeEditModal() {
-    const modal = document.getElementById('editModal');
-    if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
-}
-function toggleEditType(type) {
-    if (type === 'file') {
-        document.getElementById('edit_file_group').classList.remove('hidden');
-        document.getElementById('edit_link_group').classList.add('hidden');
+function previewFile(url, type) {
+    if (type === 'link') { 
+        window.open(url, '_blank'); 
+        return; 
+    }
+    const container = document.getElementById('previewContainer');
+    if (!container) return;
+    const ext = url.split('.').pop().toLowerCase();
+    
+    if (ext === 'pdf') {
+        container.innerHTML = `<iframe src="${url}" class="w-full h-full border-0"></iframe>`;
     } else {
-        document.getElementById('edit_file_group').classList.add('hidden');
-        document.getElementById('edit_link_group').classList.remove('hidden');
+        container.innerHTML = `<div class="w-full h-full flex items-center justify-center p-4 bg-slate-900/10"><img src="${url}" class="max-h-full max-w-full object-contain rounded-lg"></div>`;
+    }
+    
+    const previewModal = document.getElementById('previewModal');
+    if (previewModal) {
+        previewModal.classList.remove('hidden');
+        previewModal.classList.add('flex');
     }
 }
 
-// ส่งแก้ไขเอกสารเฉพาะรายการ
-function submitEdit() {
-    const docType = document.getElementById('edit_single_type').value;
-    const kind = document.querySelector('input[name="edit_kind"]:checked').value;
-    const formData = new FormData();
-    formData.append('single_type', docType);
-    formData.append(`kind_${docType}`, kind);
-
-    if (kind === 'file') {
-        const fileInput = document.getElementById('edit_file_input');
-        if (!fileInput.files.length) {
-            Swal.fire({ icon: 'warning', title: 'กรุณาเลือกไฟล์เอกสารใหม่' });
-            return;
-        }
-        if (fileInput.files[0].size > 15 * 1024 * 1024) {
-            Swal.fire({ icon: 'error', title: 'ขนาดไฟล์เกิน 15MB' });
-            return;
-        }
-        formData.append(`file_${docType}`, fileInput.files[0]);
-    } else {
-        const linkInput = document.getElementById('edit_link_input').value.trim();
-        if (!linkInput) {
-            Swal.fire({ icon: 'warning', title: 'กรุณากรอก URL ลิงก์เอกสาร' });
-            return;
-        }
-        formData.append(`link_${docType}`, linkInput);
-    }
-
-    Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-    fetch('api/upload_doc.php', { method: 'POST', body: formData })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            closeEditModal();
-            Swal.fire({ icon: 'success', title: 'แก้ไขสำเร็จ!' }).then(() => location.reload());
-        } else {
-            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: data.message });
-        }
-    });
-}
-
-// ลบเอกสาร
 function deleteDoc(docId) {
     Swal.fire({
         title: 'ยืนยันการลบเอกสาร?',
@@ -457,32 +469,6 @@ function deleteDoc(docId) {
     });
 }
 
-// พรีวิวเอกสาร หรือ เปิดลิงก์ภายนอก[cite: 2]
-function previewFile(url, type) {
-    if (type === 'link') { 
-        // ถ้าเป็นลิงก์ ให้สั่งเปิดแท็บใหม่ทันที[cite: 2]
-        window.open(url, '_blank'); 
-        return; 
-    }
-
-    const container = document.getElementById('previewContainer');
-    if (!container) return;
-    const ext = url.split('.').pop().toLowerCase();
-    
-    if (ext === 'pdf') {
-        container.innerHTML = `<iframe src="${url}" class="w-full h-full border-0"></iframe>`;
-    } else {
-        container.innerHTML = `<div class="w-full h-full flex items-center justify-center p-4 bg-slate-900/10"><img src="${url}" class="max-h-full max-w-full object-contain rounded-lg"></div>`;
-    }
-    
-    const previewModal = document.getElementById('previewModal');
-    if (previewModal) {
-        previewModal.classList.remove('hidden');
-        previewModal.classList.add('flex');
-    }
-}
-
-// บันทึกอัพโหลดแบบรวม (ทั้ง 7 รายการ)
 function submitUpload() {
     const formData = new FormData(document.getElementById('uploadForm'));
     const docTypes = ['pa1', 'pa2', 'pa3', 'info', 'report', 'salary', 'other'];
