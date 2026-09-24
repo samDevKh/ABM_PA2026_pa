@@ -2,117 +2,101 @@
 header('Content-Type: application/json');
 require_once __DIR__ . '/../config/database.php';
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? null) !== 'teacher') {
     echo json_encode(['success' => false, 'message' => 'ไม่มีสิทธิ์เข้าถึง']);
     exit;
 }
 
 $user_id = $_SESSION['user_id'];
 
-// ดึงข้อมูล username เพื่อใช้เป็นชื่อโฟลเดอร์ส่วนตัว (id-username)
-$stmtUser = $pdo->prepare("SELECT username FROM users WHERE id = ?");
-$stmtUser->execute([$user_id]);
-$user = $stmtUser->fetch();
+// เพิ่มรายการ 'salary' เข้าไปในอาร์เรย์รายการเอกสาร
+$docTypes = ['pa1', 'pa2', 'pa3', 'info', 'report', 'salary', 'other'];
 
-if (!$user) {
-    echo json_encode(['success' => false, 'message' => 'ไม่พบข้อมูลผู้ใช้งาน']);
-    exit;
-}
-
-$folderName = $user_id . '-' . $user['username'];
-$uploadDir = __DIR__ . '/../uploads/' . $folderName . '/';
-
+// กำหนดโฟลเดอร์สำหรับจัดเก็บไฟล์
+$uploadDir = __DIR__ . '/../uploads/';
 if (!file_exists($uploadDir)) {
     mkdir($uploadDir, 0777, true);
 }
 
-// ตรวจสอบว่าเป็นการแก้ไขไฟล์เดียวหรือไม่
-$singleType = $_POST['single_type'] ?? null;
-
-// ปรับให้เหลือเฉพาะ 3 ประเภทเอกสาร
-$docTypes = $singleType ? [$singleType] : ['report', 'info', 'other'];
-
 $uploadedCount = 0;
-$errors = [];
 
-foreach ($docTypes as $type) {
-    $kind = $_POST["kind_{$type}"] ?? 'file';
+try {
+    // 1. กรณีส่งแบบแก้ไขเอกสารเฉพาะรายการ (single_type)
+    if (isset($_POST['single_type'])) {
+        $type = $_POST['single_type'];
+        $kind = $_POST["kind_{$type}"] ?? 'file';
 
-    if ($kind === 'file') {
-        if (isset($_FILES["file_{$type}"]) && $_FILES["file_{$type}"]['error'] === UPLOAD_ERR_OK) {
+        if ($kind === 'file' && isset($_FILES["file_{$type}"]) && $_FILES["file_{$type}"]['error'] === UPLOAD_ERR_OK) {
             $file = $_FILES["file_{$type}"];
-            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-            $allowedExts = ['pdf', 'png', 'jpg', 'jpeg'];
+            $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+            $newFileName = $user_id . '_' . $type . '_' . time() . '.' . $ext;
+            $destination = $uploadDir . $newFileName;
+            $dbPath = '/uploads/' . $newFileName;
 
-            if (!in_array($ext, $allowedExts)) {
-                $errors[] = "ไฟล์รายการ ({$type}) ต้องเป็น PDF, PNG หรือ JPG เท่านั้น";
-                continue;
-            }
-
-            if ($file['size'] > 15 * 1024 * 1024) {
-                $errors[] = "ไฟล์รายการ ({$type}) มีขนาดใหญ่เกิน 15MB";
-                continue;
-            }
-
-            $newFileName = 'pa_' . $type . '_' . time() . '_' . uniqid() . '.' . $ext;
-            $targetPath = $uploadDir . $newFileName;
-
-            if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-                $filePath = '/uploads/' . $folderName . '/' . $newFileName;
-
-                // ลบไฟล์เดิมในโฟลเดอร์ (ถ้ามี)
-                $stmtOld = $pdo->prepare("SELECT file_type, file_path_or_link FROM pa_documents WHERE user_id = ? AND doc_type = ?");
-                $stmtOld->execute([$user_id, $type]);
-                $oldDoc = $stmtOld->fetch();
-                if ($oldDoc && $oldDoc['file_type'] === 'file') {
-                    $oldPath = __DIR__ . '/..' . $oldDoc['file_path_or_link'];
-                    if (file_exists($oldPath)) {
-                        @unlink($oldPath);
-                    }
-                }
-
-                // ลบข้อมูลเดิมในตาราง แล้วบันทึกข้อมูลใหม่
+            if (move_uploaded_file($file['tmp_name'], $destination)) {
+                // ลบข้อมูลเดิมของประเภทนี้ก่อนอัปเดตใหม่
                 $stmtDel = $pdo->prepare("DELETE FROM pa_documents WHERE user_id = ? AND doc_type = ?");
                 $stmtDel->execute([$user_id, $type]);
 
-                $stmt = $pdo->prepare("INSERT INTO pa_documents (user_id, doc_type, file_type, file_path_or_link, original_name) VALUES (?, ?, 'file', ?, ?)");
-                $stmt->execute([$user_id, $type, $filePath, $file['name']]);
+                // บันทึกข้อมูลใหม่
+                $stmtIns = $pdo->prepare("INSERT INTO pa_documents (user_id, doc_type, file_type, file_path_or_link, original_name) VALUES (?, ?, 'file', ?, ?)");
+                $stmtIns->execute([$user_id, $type, $dbPath, $file['name']]);
                 $uploadedCount++;
-            } else {
-                $errors[] = "ไม่สามารถย้ายไฟล์รายการ {$type} ลงโฟลเดอร์ได้";
             }
+        } elseif ($kind === 'link' && !empty($_POST["link_{$type}"])) {
+            $link = trim($_POST["link_{$type}"]);
+            
+            $stmtDel = $pdo->prepare("DELETE FROM pa_documents WHERE user_id = ? AND doc_type = ?");
+            $stmtDel->execute([$user_id, $type]);
+
+            $stmtIns = $pdo->prepare("INSERT INTO pa_documents (user_id, doc_type, file_type, file_path_or_link, original_name) VALUES (?, ?, 'link', ?, ?)");
+            $stmtIns->execute([$user_id, $type, $link, $link]);
+            $uploadedCount++;
         }
-    } else {
-        $link = trim($_POST["link_{$type}"] ?? '');
-        if (!empty($link)) {
-            if (filter_var($link, FILTER_VALIDATE_URL)) {
-                // ลบไฟล์เดิมในโฟลเดอร์ถ้ามี
-                $stmtOld = $pdo->prepare("SELECT file_type, file_path_or_link FROM pa_documents WHERE user_id = ? AND doc_type = ?");
-                $stmtOld->execute([$user_id, $type]);
-                $oldDoc = $stmtOld->fetch();
-                if ($oldDoc && $oldDoc['file_type'] === 'file') {
-                    $oldPath = __DIR__ . '/..' . $oldDoc['file_path_or_link'];
-                    if (file_exists($oldPath)) {
-                        @unlink($oldPath);
-                    }
+    } 
+    // 2. กรณีการอัปโหลดรวมทุกรายการผ่านแบบฟอร์มหลัก
+    else {
+        foreach ($docTypes as $type) {
+            $kind = $_POST["kind_{$type}"] ?? 'file';
+
+            if ($kind === 'file' && isset($_FILES["file_{$type}"]) && $_FILES["file_{$type}"]['error'] === UPLOAD_ERR_OK) {
+                $file = $_FILES["file_{$type}"];
+                $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+                $newFileName = $user_id . '_' . $type . '_' . time() . '.' . $ext;
+                $destination = $uploadDir . $newFileName;
+                $dbPath = '/uploads/' . $newFileName;
+
+                if (move_uploaded_file($file['tmp_name'], $destination)) {
+                    $stmtDel = $pdo->prepare("DELETE FROM pa_documents WHERE user_id = ? AND doc_type = ?");
+                    $stmtDel->execute([$user_id, $type]);
+
+                    $stmtIns = $pdo->prepare("INSERT INTO pa_documents (user_id, doc_type, file_type, file_path_or_link, original_name) VALUES (?, ?, 'file', ?, ?)");
+                    $stmtIns->execute([$user_id, $type, $dbPath, $file['name']]);
+                    $uploadedCount++;
                 }
+            } elseif ($kind === 'link' && !empty($_POST["link_{$type}"])) {
+                $link = trim($_POST["link_{$type}"]);
 
                 $stmtDel = $pdo->prepare("DELETE FROM pa_documents WHERE user_id = ? AND doc_type = ?");
                 $stmtDel->execute([$user_id, $type]);
 
-                $stmt = $pdo->prepare("INSERT INTO pa_documents (user_id, doc_type, file_type, file_path_or_link) VALUES (?, ?, 'link', ?)");
-                $stmt->execute([$user_id, $type, $link]);
+                $stmtIns = $pdo->prepare("INSERT INTO pa_documents (user_id, doc_type, file_type, file_path_or_link, original_name) VALUES (?, ?, 'link', ?, ?)");
+                $stmtIns->execute([$user_id, $type, $link, $link]);
                 $uploadedCount++;
-            } else {
-                $errors[] = "ลิงก์ URL รายการ {$type} ไม่ถูกต้อง";
             }
         }
     }
-}
 
-if ($uploadedCount > 0) {
-    echo json_encode(['success' => true, 'count' => $uploadedCount]);
-} else {
-    $msg = count($errors) > 0 ? implode(', ', $errors) : 'กรุณาเลือกไฟล์หรือระบุลิงก์อย่างน้อย 1 รายการ';
-    echo json_encode(['success' => false, 'message' => $msg]);
+    if ($uploadedCount > 0) {
+        echo json_encode(['success' => true, 'message' => 'บันทึกอัปโหลดเอกสารเรียบร้อยแล้ว']);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'กรุณาเลือกไฟล์หรือระบุลิงก์อย่างน้อย 1 รายการ']);
+    }
+
+} catch (Exception $e) {
+    echo json_encode(['success' => false, 'message' => 'เกิดข้อผิดพลาดในการบันทึก: ' . $e->getMessage()]);
 }

@@ -1,31 +1,33 @@
 <?php
 require_once __DIR__ . '/config/database.php';
-if (!isset($_SESSION['user_id']) ||$_SESSION['role'] !== 'teacher') {
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'teacher') {
     header('Location: /login');
     exit;
 }
 
-$user_id =$_SESSION['user_id'];
+$user_id = $_SESSION['user_id'];
 
-// ดึงรายการเอกสารทั้งหมดของครูท่านนี้ (ทั้งที่เป็นไฟล์และลิงก์)[cite: 1]
-$stmt =$pdo->prepare("SELECT * FROM pa_documents WHERE user_id = ? ORDER BY created_at DESC");
-$stmt->execute([$user_id]);$raw_documents = $stmt->fetchAll();$documents = [];
+// ดึงรายการเอกสารทั้งหมดของครูท่านนี้ (ทั้งที่เป็นไฟล์และลิงก์)[cite: 1, 2]
+$stmt = $pdo->prepare("SELECT * FROM pa_documents WHERE user_id = ? ORDER BY created_at DESC");
+$stmt->execute([$user_id]);
+$raw_documents = $stmt->fetchAll();
+$documents = [];
 
-foreach ($raw_documents as$doc) {
+foreach ($raw_documents as $doc) {
     if ($doc['file_type'] === 'link') {
-        // หากเป็นลิงก์ ให้นำมาแสดงผลได้ทันที[cite: 1]
-        $documents[] =$doc;
+        // หากเป็นลิงก์ ให้นำมาแสดงผลได้ทันที[cite: 2]
+        $documents[] = $doc;
     } else {
-        // หากเป็นไฟล์ ให้เช็กว่าไฟล์จริงยังคงอยู่ในเซิร์ฟเวอร์[cite: 1]
-        $realPath = __DIR__ .$doc['file_path_or_link'];
+        // หากเป็นไฟล์ ให้เช็กว่าไฟล์จริงยังคงอยู่ในเซิร์ฟเวอร์[cite: 2]
+        $realPath = __DIR__ . $doc['file_path_or_link'];
         if (file_exists($realPath)) {
-            $documents[] =$doc;
+            $documents[] = $doc;
         }
     }
 }
 
-// ดึงข้อเสนอแนะจากผู้ประเมิน[cite: 1]
-$stmt_comment =$pdo->prepare("
+// ดึงข้อเสนอแนะจากผู้ประเมิน[cite: 2]
+$stmt_comment = $pdo->prepare("
     SELECT e.*, u.fullname as evaluator_name
     FROM evaluations e
     JOIN users u ON e.evaluator_id = u.id
@@ -33,7 +35,7 @@ $stmt_comment =$pdo->prepare("
     ORDER BY e.created_at DESC
 ");
 $stmt_comment->execute([$user_id]);
-$comments =$stmt_comment->fetchAll();
+$comments = $stmt_comment->fetchAll();
 
 $page_title = "ส่วนของคุณครู - ระบบประเมิน PA";
 $header_title = "ระบบอัพโหลดเอกสาร PA";
@@ -60,7 +62,7 @@ require_once __DIR__ . '/includes/header.php';
                 <p>ยังไม่มีเอกสารที่อัพโหลด กดปุ่ม "แนบไฟล์ / แนบลิงก์เอกสาร" ด้านบนเพื่อเริ่มต้น</p>
             </div>
         <?php else: ?>
-            <?php foreach ($documents as$doc): ?>
+            <?php foreach ($documents as $doc): ?>
                 <?php $isLink = ($doc['file_type'] === 'link'); ?>
                 <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition space-y-3 flex flex-col justify-between">
                     
@@ -70,18 +72,19 @@ require_once __DIR__ . '/includes/header.php';
                             <span class="bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-full uppercase border border-indigo-100">
                                 <?php
                                 $docTypeLabel = [
-                                    'pa1' => 'PA1 บันทึกข้อตกลงฯ',
-                                    'pa2' => 'PA2 แบบประเมินฯ',
-                                    'pa3' => 'PA3 สรุปผลการประเมิน',
-                                    'info' => 'Infographic รายงาน',
-                                    'report' => 'รายงานผลการปฏิบัติงาน (≤20หน้า)',
-                                    'other' => 'อื่น ๆ'
+                                    'pa1' => '1. แบบบันทึกข้อตกลงในการพัฒนางาน (PA1)',
+                                    'pa2' => '2. แบบประเมินผลการปฏิบัติงาน (PA2)',
+                                    'pa3' => '3. สรุปผลการประเมิน (PA3)',
+                                    'info' => '4. รายงาน (Infographic)',
+                                    'report' => '5. รายงานผลการปฏิบัติงานตามข้อตกลง (≤20หน้า)',
+                                    'salary' => '6. รายงานผลการปฏิบัติงานเพื่อเลื่อนเงินเดือน',
+                                    'other' => '7. อื่น ๆ'
                                 ];
                                 echo htmlspecialchars($docTypeLabel[$doc['doc_type']] ?? $doc['doc_type']);
                                 ?>
                             </span>
 
-                            <!-- แยกสัญลักษณ์ประเภท: ลิงก์ vs ไฟล์[cite: 1] -->
+                            <!-- แยกสัญลักษณ์ประเภท: ลิงก์ vs ไฟล์[cite: 2] -->
                             <?php if ($isLink): ?>
                                 <span class="bg-sky-50 text-sky-600 border border-sky-200 text-[11px] font-medium px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
                                     <i class="fa-solid fa-link"></i> ลิงก์ภายนอก
@@ -93,14 +96,14 @@ require_once __DIR__ . '/includes/header.php';
                             <?php endif; ?>
                         </div>
 
-                        <!-- แสดงชื่อไฟล์ หรือ แสดง URL ลิงก์[cite: 1] -->
+                        <!-- แสดงชื่อไฟล์ หรือ แสดง URL ลิงก์[cite: 2] -->
                         <div>
-                            <h3 class="font-semibold text-slate-800 text-sm truncate" title="<?= htmlspecialchars($doc['original_name'] ?:$doc['file_path_or_link']) ?>">
-                                <?= htmlspecialchars($doc['original_name'] ?:$doc['file_path_or_link']) ?>
+                            <h3 class="font-semibold text-slate-800 text-sm truncate" title="<?= htmlspecialchars($doc['original_name'] ?: $doc['file_path_or_link']) ?>">
+                                <?= htmlspecialchars($doc['original_name'] ?: $doc['file_path_or_link']) ?>
                             </h3>
                             
                             <?php if ($isLink): ?>
-                                <!-- แสดง URL ของลิงก์ที่แนบมา[cite: 1] -->
+                                <!-- แสดง URL ของลิงก์ที่แนบมา[cite: 2] -->
                                 <a href="<?= htmlspecialchars($doc['file_path_or_link']) ?>" target="_blank" class="text-xs text-sky-600 hover:underline truncate block mt-1 flex items-center gap-1">
                                     <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> <?= htmlspecialchars($doc['file_path_or_link']) ?>
                                 </a>
@@ -113,8 +116,8 @@ require_once __DIR__ . '/includes/header.php';
                         <p class="text-[11px] text-slate-400">วันที่อัพโหลด: <?= date('d/m/Y H:i', strtotime($doc['created_at'])) ?></p>
 
                         <div class="flex items-center justify-between text-xs font-medium pt-1">
-                            <!-- ปุ่ม เปิดดู/เปิดลิงก์[cite: 1] -->
-                            <button onclick="previewFile('<?= htmlspecialchars($doc['file_path_or_link']) ?>', '<?=$doc['file_type'] ?>')" class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg transition flex items-center gap-1">
+                            <!-- ปุ่ม เปิดดู/เปิดลิงก์[cite: 2] -->
+                            <button onclick="previewFile('<?= htmlspecialchars($doc['file_path_or_link']) ?>', '<?= $doc['file_type'] ?>')" class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg transition flex items-center gap-1">
                                 <?php if ($isLink): ?>
                                     <i class="fa-solid fa-arrow-up-right-from-square"></i> เปิดลิงก์
                                 <?php else: ?>
@@ -122,7 +125,7 @@ require_once __DIR__ . '/includes/header.php';
                                 <?php endif; ?>
                             </button>
 
-                            <!-- ปุ่ม แก้ไข / ลบ[cite: 1] -->
+                            <!-- ปุ่ม แก้ไข / ลบ[cite: 2] -->
                             <div class="flex items-center gap-2">
                                 <button onclick="openEditModal('<?= $doc['doc_type'] ?>')" class="text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-lg transition flex items-center gap-1">
                                     <i class="fa-solid fa-pen-to-square"></i> แก้ไข
@@ -160,7 +163,7 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 <?php endif; ?>
 
-<!-- Modal 1: อัพโหลดเอกสารรวม (6 รายการ)[cite: 1] -->
+<!-- Modal 1: อัพโหลดเอกสารรวม (7 รายการ) -->
 <div id="uploadModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 overflow-y-auto">
     <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl p-6 space-y-5 my-8">
         <div class="flex justify-between items-center border-b pb-3">
@@ -244,11 +247,26 @@ require_once __DIR__ . '/includes/header.php';
                 <div id="input_report_link" class="hidden"><input type="url" name="link_report" placeholder="https://..." class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"></div>
             </div>
 
-            <!-- 6. อื่น ๆ -->
+            <!-- 6. รายงานผลการปฏิบัติงานเพื่อประกอบการพิจารณาเลื่อนเงินเดือน (เพิ่มใหม่) -->
             <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                 <div class="flex justify-between items-center">
                     <label class="font-bold text-slate-700 text-sm flex items-center gap-2">
-                        <span class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">6</span> อื่น ๆ
+                        <span class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">6</span> รายงานผลการปฏิบัติงานเพื่อประกอบการพิจารณาเลื่อนเงินเดือน
+                    </label>
+                    <div class="flex gap-3 text-xs">
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_salary" value="file" checked onclick="toggleType('salary', 'file')"> ไฟล์</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_salary" value="link" onclick="toggleType('salary', 'link')"> ลิงก์</label>
+                    </div>
+                </div>
+                <div id="input_salary_file"><input type="file" name="file_salary" accept=".pdf,.png,.jpg,.jpeg" class="w-full border border-slate-300 rounded-lg text-xs p-2 bg-white"></div>
+                <div id="input_salary_link" class="hidden"><input type="url" name="link_salary" placeholder="https://..." class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"></div>
+            </div>
+
+            <!-- 7. อื่น ๆ -->
+            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <div class="flex justify-between items-center">
+                    <label class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                        <span class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">7</span> อื่น ๆ
                     </label>
                     <div class="flex gap-3 text-xs">
                         <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="kind_other" value="file" checked onclick="toggleType('other', 'file')"> ไฟล์</label>
@@ -268,7 +286,7 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 </div>
 
-<!-- Modal 2: แก้ไขเอกสารรายรายการ[cite: 1] -->
+<!-- Modal 2: แก้ไขเอกสารรายรายการ[cite: 2] -->
 <div id="editModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
     <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl p-6 space-y-4">
         <div class="flex justify-between items-center border-b pb-3">
@@ -297,7 +315,7 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 </div>
 
-<!-- Modal 3: ดูตัวอย่างเอกสาร[cite: 1] -->
+<!-- Modal 3: ดูตัวอย่างเอกสาร[cite: 2] -->
 <div id="previewModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-4">
     <div class="bg-white w-full max-w-4xl h-[85vh] rounded-2xl shadow-xl p-4 flex flex-col">
         <div class="flex justify-between items-center mb-3">
@@ -341,12 +359,13 @@ function toggleType(dockey, type) {
 function openEditModal(docType) {
     document.getElementById('edit_single_type').value = docType;
     const docTypeLabel = {
-        'pa1': 'PA1 บันทึกข้อตกลงฯ',
-        'pa2': 'PA2 แบบประเมินฯ',
-        'pa3': 'PA3 สรุปผลการประเมิน',
-        'info': 'Infographic รายงาน',
-        'report': 'รายงานผลการปฏิบัติงาน (≤20หน้า)',
-        'other': 'อื่น ๆ'
+        'pa1': '1. แบบบันทึกข้อตกลงในการพัฒนางาน (PA1)',
+        'pa2': '2. แบบประเมินผลการปฏิบัติงาน (PA2)',
+        'pa3': '3. สรุปผลการประเมิน (PA3)',
+        'info': '4. รายงาน (Infographic)',
+        'report': '5. รายงานผลการปฏิบัติงานตามข้อตกลง (≤20หน้า)',
+        'salary': '6. รายงานผลการปฏิบัติงานเพื่อเลื่อนเงินเดือน',
+        'other': '7. อื่น ๆ'
     };
     document.getElementById('editModalTitle').innerText = 'แก้ไขเอกสาร ' + (docTypeLabel[docType] || docType.toUpperCase());
     const modal = document.getElementById('editModal');
@@ -438,10 +457,10 @@ function deleteDoc(docId) {
     });
 }
 
-// พรีวิวเอกสาร หรือ เปิดลิงก์ภายนอก[cite: 1]
+// พรีวิวเอกสาร หรือ เปิดลิงก์ภายนอก[cite: 2]
 function previewFile(url, type) {
     if (type === 'link') { 
-        // ถ้าเป็นลิงก์ ให้สั่งเปิดแท็บใหม่ทันที[cite: 1]
+        // ถ้าเป็นลิงก์ ให้สั่งเปิดแท็บใหม่ทันที[cite: 2]
         window.open(url, '_blank'); 
         return; 
     }
@@ -463,10 +482,10 @@ function previewFile(url, type) {
     }
 }
 
-// บันทึกอัปโหลดแบบรวม (ทั้ง 6 รายการ)
+// บันทึกอัพโหลดแบบรวม (ทั้ง 7 รายการ)
 function submitUpload() {
     const formData = new FormData(document.getElementById('uploadForm'));
-    const docTypes = ['pa1', 'pa2', 'pa3', 'info', 'report', 'other'];
+    const docTypes = ['pa1', 'pa2', 'pa3', 'info', 'report', 'salary', 'other'];
     let hasData = false;
     let isValid = true;
 

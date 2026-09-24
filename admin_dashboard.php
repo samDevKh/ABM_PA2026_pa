@@ -10,18 +10,24 @@ $message = '';
 $error = '';
 
 // 1. จัดการการเพิ่มผู้ประเมินใหม่ (Evaluator)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) &&$_POST['action'] === 'add_evaluator') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_evaluator') {
     $fullname = trim($_POST['fullname'] ?? '');
     $username = trim($_POST['username'] ?? '');
     $password = trim($_POST['password'] ?? '');
+    $evaluator_num = isset($_POST['evaluator_num']) && $_POST['evaluator_num'] !== '' ? intval($_POST['evaluator_num']) : NULL;
+    $position = trim($_POST['position'] ?? '');
 
     if (!empty($fullname) && !empty($username) && !empty($password)) {
-        $stmtChk =$pdo->prepare("SELECT id FROM users WHERE username = ?");
+        // เช็กว่า username ซ้ำหรือไม่
+        $stmtChk = $pdo->prepare("SELECT id FROM users WHERE username = ?");
         $stmtChk->execute([$username]);
-        if ($stmtChk->rowCount() > 0) {$_SESSION['flash_error'] = 'ชื่อผู้ใช้นี้ถูกใช้งานแล้ว';
+        if ($stmtChk->rowCount() > 0) {
+            $_SESSION['flash_error'] = 'ชื่อผู้ใช้นี้ถูกใช้งานแล้ว';
         } else {
-            $stmtIns =$pdo->prepare("INSERT INTO users (username, password, fullname, role) VALUES (?, ?, ?, 'evaluator')");
-            if ($stmtIns->execute([$username,$password, $fullname])) {$_SESSION['flash_success'] = 'เพิ่มบัญชีผู้ประเมินเรียบร้อยแล้ว';
+            // เพิ่ม evaluator_num และ position ลงในตาราง users
+            $stmtIns = $pdo->prepare("INSERT INTO users (username, password, fullname, role, evaluator_num, position) VALUES (?, ?, ?, 'evaluator', ?, ?)");
+            if ($stmtIns->execute([$username, $password, $fullname, $evaluator_num, $position])) {
+                $_SESSION['flash_success'] = 'เพิ่มบัญชีผู้ประเมินเรียบร้อยแล้ว';
             } else {
                 $_SESSION['flash_error'] = 'เกิดข้อผิดพลาดในการบันทึกข้อมูล';
             }
@@ -140,24 +146,44 @@ require_once __DIR__ . '/includes/header.php';
         </h3>
         <form method="POST" class="space-y-3">
             <input type="hidden" name="action" value="add_evaluator">
+            
             <div>
                 <label class="block text-xs font-medium text-slate-700 mb-1">ชื่อ-นามสกุล กรรมการ</label>
-                <input type="text" name="fullname" placeholder="นายวิชัย ใฝ่เรียนรู้" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <input type="text" name="fullname" placeholder="ดร.วิชัย ประเมินดี" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
             </div>
+
+            <!-- เพิ่มช่องเลือก ลำดับกรรมการ (evaluator_num)[cite: 4] -->
+            <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1">ลำดับกรรมการ</label>
+                <select name="evaluator_num" class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <option value="">-- ไม่ระบุ --</option>
+                    <option value="1">1 = ประธานกรรมการ</option>
+                    <option value="2">2 = กรรมการคนที่ 2</option>
+                    <option value="3">3 = กรรมการคนที่ 3</option>
+                </select>
+            </div>
+
+            <!-- เพิ่มช่องกรอก ตำแหน่ง (position)[cite: 4] -->
+            <div>
+                <label class="block text-xs font-medium text-slate-700 mb-1">ตำแหน่ง</label>
+                <input type="text" name="position" placeholder="เช่น ผู้อำนวยการโรงเรียน..." class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            </div>
+
             <div>
                 <label class="block text-xs font-medium text-slate-700 mb-1">ชื่อผู้ใช้งาน (Username)</label>
                 <input type="text" name="username" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
             </div>
+
             <div>
                 <label class="block text-xs font-medium text-slate-700 mb-1">รหัสผ่าน (Password)</label>
                 <input type="password" name="password" required class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
             </div>
+
             <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium py-2.5 rounded-lg transition">
                 + เพิ่มผู้ประเมิน
             </button>
         </form>
     </div>
-
 </div>
 
 <!-- PA3 Summary & Document List Table -->
