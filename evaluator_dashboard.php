@@ -27,7 +27,7 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $teachers =$stmt->fetchAll();
 
-$docStmt =$pdo->query("SELECT * FROM pa_documents ORDER BY created_at DESC");
+$docStmt =$pdo->query("SELECT * FROM pa_documents WHERE doc_type != 'exam' ORDER BY created_at DESC");
 $raw_docs = $docStmt->fetchAll();$teacher_docs = [];
 foreach ($raw_docs as$d) {
     if ($d['file_type'] === 'link') {$teacher_docs[$d['user_id']][] =$d;

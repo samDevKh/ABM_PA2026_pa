@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 space-y-6">
     <div class="text-center space-y-2">
-        <h1 class="text-2xl font-bold text-slate-800">ระบบประเมิน PA ข้าราชการครู</h1>
+        <h1 class="text-2xl font-bold text-slate-800">ระบบบริหารจัดการเอกสาร PA และแบบทดสอบ (PA & Exam DocFlow)</h1>
         <p class="text-slate-500 text-sm" id="formSubtitle">เข้าสู่ระบบเพื่อจัดการและประเมินเอกสาร</p>
     </div>
 
